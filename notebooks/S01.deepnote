@@ -249,7 +249,7 @@ project:
         # Pista: ordena viajes por total_amount de mayor a menor y toma la primera fila
         mas_caro = ...
 
-        print(mas_caro.select("total_amount", "PULocationID"))
+        print(mas_caro)
     - id: 2903e544edba44679f2f931906af52f3
       blockGroup: 2903e544edba44679f2f931906af52f3
       type: text-cell-h3
