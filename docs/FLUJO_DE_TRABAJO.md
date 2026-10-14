@@ -22,6 +22,20 @@ Los archivos `notebooks/*.deepnote` en git son la fuente de verdad. Deepnote es 
 - Cambios posteriores: `deepnote sync`, siempre con `--dry-run` primero. Nunca `--prune` ni `--on-conflict override` sin revisar.
 - Los outputs de las celdas no se sincronizan, solo el contenido.
 
+## Lo que se comprobó en la primera prueba (2026-10-14)
+
+- `deepnote open dist/curso.deepnote` falla en WSL con `spawn xdg-open ENOENT` y no crea nada en el workspace. El proyecto se creó con el MCP (`create_project`, `create_notebook`, `create_block`). Los bloques se crean uno por uno con `position`, en orden.
+- `create_block` no acepta `sql_integration_id: deepnote-dataframe-sql` en `metadata` (pide un UUID en `integrationId`). El bloque SQL se crea solo con `deepnote_variable_name` y `deepnote_return_variable_type`, y queda con `integrationId: null`.
+- `requirements.txt` se sube con `write_file` y queda en el proyecto, pero no se instala solo (ver `docs/REGISTRO_VERIFICACION.md`).
+- Sync en seco, hacia un directorio vacío fuera del repo (no escribe nada, usa `DEEPNOTE_TOKEN` del entorno):
+
+```bash
+set -a && . ./.env && set +a
+deepnote sync <directorio_vacio> --dry-run --all-files
+```
+
+  Sync espeja el workspace completo, un directorio por proyecto con un `.deepnote` por notebook. No crea ni borra proyectos. El push real todavía no se ha probado.
+
 ## Traer cambios hechos en la nube
 
 Si editas algo directo en Deepnote, corre sync para traerlo al repo y haz commit. Si no, el siguiente sync desde el repo podría pisarlo.
