@@ -1,256 +1,340 @@
 version: 1.0.0
 metadata:
-  createdAt: "2026-10-11T18:00:00.000Z"
+  createdAt: '2026-10-11T18:00:00.000Z'
 project:
   id: 516cf7c2-99b0-47f2-b623-f8dc0f6d0f6d
   name: Curso Data Engineering - Impact Click
   notebooks:
-    - id: 0e0e7dda-04cd-4c84-9a72-404eeb901a29
-      name: S01 - Introduccion y entorno
-      executionMode: block
-      isModule: false
-      blocks:
+  - id: 0e0e7dda-04cd-4c84-9a72-404eeb901a29
+    name: S01 - Introduccion y entorno
+    executionMode: block
+    isModule: false
+    blocks:
+    - id: 7e0accb6c942478e8016f5a600a830f1
+      blockGroup: 7e0accb6c942478e8016f5a600a830f1
+      type: text-cell-h1
+      sortingKey: a0
+      content: Sesión 1, Introducción a la ingeniería de datos
+    - id: 8081655afdcb4bebad6607fc5b030bb4
+      blockGroup: 8081655afdcb4bebad6607fc5b030bb4
+      type: text-cell-callout
+      sortingKey: a1
+      content: Antes de empezar, presiona "Run all" arriba a la derecha. Vas a hacer esto al inicio de
+        cada sesión. La máquina se apaga sola después de 15 minutos sin actividad, y al encenderse otra
+        vez las variables se pierden, aunque tu código y tus archivos siguen ahí.
+      metadata:
+        color: blue
+    - id: 3a70ced5475f4ba198ab180804bb5409
+      blockGroup: 3a70ced5475f4ba198ab180804bb5409
+      type: text-cell-p
+      sortingKey: a2
+      content: 'Al terminar esta sesión vas a saber qué hace un ingeniero de datos, cómo moverte en este
+        entorno de trabajo, y vas a haber leído tu primer archivo de datos real: casi tres millones de
+        viajes de taxi.'
+    - id: 1214f471d4c7454296f997b26cf1dde4
+      blockGroup: 1214f471d4c7454296f997b26cf1dde4
+      type: text-cell-h2
+      sortingKey: a3
+      content: 'El mapa: anatomía de un pipeline'
+    - id: 2ea7298994fc427abb029ee50f26c84f
+      blockGroup: 2ea7298994fc427abb029ee50f26c84f
+      type: markdown
+      sortingKey: a4
+      content: |
+        Un **pipeline de datos** es una cadena de pasos que lleva datos de una fuente a un destino. Con el ejemplo del taxi:
 
-        - id: 7e0accb6c942478e8016f5a600a830f1
-          blockGroup: 7e0accb6c942478e8016f5a600a830f1
-          type: text-cell-h1
-          sortingKey: a0
-          content: Sesión 1, Introducción a la ingeniería de datos
+        - **Fuente:** la NYC Taxi and Limousine Commission publica un archivo con los viajes de cada mes.
+        - **Ingesta:** descargamos ese archivo Parquet con una URL, sin subir nada a mano.
+        - **Transformación:** limpiamos y calculamos, por ejemplo quitamos los viajes con distancia cero.
+        - **Almacenamiento:** guardamos el resultado en un archivo Parquet dentro del proyecto.
+        - **Consumo:** una tabla, un reporte o una gráfica que alguien usa para tomar una decisión.
+    - id: a20d8200130142b395f3cb4ecb815617
+      blockGroup: a20d8200130142b395f3cb4ecb815617
+      type: text-cell-h2
+      sortingKey: a5
+      content: 1. Verificar que el entorno funciona
+    - id: b900665eb0f94fd9b2a3fdb5e79eebf4
+      blockGroup: b900665eb0f94fd9b2a3fdb5e79eebf4
+      type: text-cell-p
+      sortingKey: a6
+      content: Esta celda confirma que las librerías del curso están instaladas. Para ejecutarla, haz
+        clic en ella y presiona Shift + Enter.
+    - id: e2d4cdf98aa44d2b8fd05eaa331e1559
+      blockGroup: e2d4cdf98aa44d2b8fd05eaa331e1559
+      type: code
+      sortingKey: a7
+      content: |
+        import polars as pl
+        import duckdb
 
-        - id: 8081655afdcb4bebad6607fc5b030bb4
-          blockGroup: 8081655afdcb4bebad6607fc5b030bb4
-          type: text-cell-callout
-          sortingKey: a1
-          content: >-
-            Antes de empezar, presiona "Run all" arriba a la derecha. Vas a hacer
-            esto al inicio de cada sesión. La máquina se apaga sola después de 15
-            minutos sin actividad, y al encenderse otra vez las variables se
-            pierden, aunque tu código y tus archivos siguen ahí.
-          metadata:
-            color: blue
+        print("Polars:", pl.__version__)
+        print("DuckDB:", duckdb.__version__)
+        print("Entorno listo.")
+    - id: 0f70ea7d69ae47989f920b5c4f9b1069
+      blockGroup: 0f70ea7d69ae47989f920b5c4f9b1069
+      type: text-cell-h2
+      sortingKey: a8
+      content: 2. Orden de ejecución y estado oculto
+    - id: ea252a4f6b7a4f56a087e7bf54fd115a
+      blockGroup: ea252a4f6b7a4f56a087e7bf54fd115a
+      type: text-cell-p
+      sortingKey: a9
+      content: Un notebook se lee y se ejecuta de arriba hacia abajo. Las tres celdas siguientes son solo
+        de demostración. Ejecútalas en el orden A, B, C y luego en el orden B, A, C, y compara lo que
+        imprime la celda C.
+    - id: 93408ee44f9a4adabe46ed59edcbe844
+      blockGroup: 93408ee44f9a4adabe46ed59edcbe844
+      type: code
+      sortingKey: aa
+      content: |
+        # Celda A
+        x = 1
+    - id: 276ebfb7257b4ef4ba511499d93f6f21
+      blockGroup: 276ebfb7257b4ef4ba511499d93f6f21
+      type: code
+      sortingKey: ab
+      content: |
+        # Celda B
+        x = 2
+    - id: 676bf0907ee745bc95bff78bff6e1ba3
+      blockGroup: 676bf0907ee745bc95bff78bff6e1ba3
+      type: code
+      sortingKey: ac
+      content: |
+        # Celda C
+        print("x vale", x)
+    - id: 1da2c76a021b4a4f9f6178699609c183
+      blockGroup: 1da2c76a021b4a4f9f6178699609c183
+      type: text-cell-p
+      sortingKey: ad
+      content: 'La página se ve igual, pero el resultado cambia según el orden en que ejecutaste las celdas.
+        A eso se le llama estado oculto: la máquina recuerda el último valor de x aunque no sea el que
+        ves escrito arriba. La solución es el ritual del curso: presiona Run all, que ejecuta todo de
+        arriba hacia abajo desde un estado limpio y siempre da el mismo resultado.'
+    - id: 58ffa9fa62a7400ca19f85b5f33050b2
+      blockGroup: 58ffa9fa62a7400ca19f85b5f33050b2
+      type: text-cell-h2
+      sortingKey: ae
+      content: 3. Tu primer dataset
+    - id: 525e1dac137b46e68937375a42d640d8
+      blockGroup: 525e1dac137b46e68937375a42d640d8
+      type: text-cell-p
+      sortingKey: af
+      content: Vamos a trabajar todo el curso con los viajes de taxi de Nueva York. El archivo pesa unos
+        50 MB, pero contiene casi tres millones de registros. Lo descargamos directo desde la fuente oficial,
+        sin subir nada a mano.
+    - id: 2c27b45bc9f34cbda74bd7e874a42737
+      blockGroup: 2c27b45bc9f34cbda74bd7e874a42737
+      type: code
+      sortingKey: ag
+      content: |
+        URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
 
-        - id: 3a70ced5475f4ba198ab180804bb5409
-          blockGroup: 3a70ced5475f4ba198ab180804bb5409
-          type: text-cell-p
-          sortingKey: a2
-          content: >-
-            Al terminar esta sesión vas a saber qué hace un ingeniero de datos,
-            cómo moverte en este entorno de trabajo, y vas a haber leído tu
-            primer archivo de datos real: casi tres millones de viajes de taxi.
+        viajes = pl.read_parquet(URL_VIAJES)
+        zonas = pl.read_csv(URL_ZONAS)
 
-        - id: a20d8200130142b395f3cb4ecb815617
-          blockGroup: a20d8200130142b395f3cb4ecb815617
-          type: text-cell-h2
-          sortingKey: a3
-          content: 1. Verificar que el entorno funciona
+        print(f"Viajes:  {viajes.height:,} filas x {viajes.width} columnas")
+        print(f"Zonas:   {zonas.height:,} filas x {zonas.width} columnas")
+    - id: c18db0f3b53a41f69a765f56c7498341
+      blockGroup: c18db0f3b53a41f69a765f56c7498341
+      type: text-cell-p
+      sortingKey: ah
+      content: Guardamos una copia local para no volver a descargarla en cada sesión. Los archivos de
+        la carpeta de trabajo sí se conservan cuando la máquina se apaga.
+    - id: c08af8115c2746be803fb4676a570d69
+      blockGroup: c08af8115c2746be803fb4676a570d69
+      type: code
+      sortingKey: ai
+      content: |
+        from pathlib import Path
 
-        - id: b900665eb0f94fd9b2a3fdb5e79eebf4
-          blockGroup: b900665eb0f94fd9b2a3fdb5e79eebf4
-          type: text-cell-p
-          sortingKey: a4
-          content: >-
-            Esta celda confirma que las librerías del curso están instaladas.
-            Para ejecutarla, haz clic en ella y presiona Shift + Enter.
+        Path("datos").mkdir(exist_ok=True)
+        viajes.write_parquet("datos/viajes_2024_01.parquet")
+        zonas.write_csv("datos/zonas.csv")
 
-        - id: e2d4cdf98aa44d2b8fd05eaa331e1559
-          blockGroup: e2d4cdf98aa44d2b8fd05eaa331e1559
-          type: code
-          sortingKey: a5
-          content: |
-            import polars as pl
-            import duckdb
+        print("Archivos guardados en la carpeta datos/")
+    - id: 3206d5127f6e43ca873b24164fd4c049
+      blockGroup: 3206d5127f6e43ca873b24164fd4c049
+      type: text-cell-h2
+      sortingKey: aj
+      content: 4. Mirar los datos antes de tocarlos
+    - id: 43f0c7d0f6944063aab5434a7ef0ef91
+      blockGroup: 43f0c7d0f6944063aab5434a7ef0ef91
+      type: text-cell-p
+      sortingKey: ak
+      content: La primera regla del oficio es mirar los datos antes de hacer nada con ellos. Cuántas filas
+        hay, qué columnas, de qué tipo es cada una.
+    - id: 1bbef6d48b4d46de8500d9f235dd4350
+      blockGroup: 1bbef6d48b4d46de8500d9f235dd4350
+      type: code
+      sortingKey: al
+      content: |
+        viajes.head(5)
+    - id: 3ae60b5c3e2a41ed9d2838fe92a25cad
+      blockGroup: 3ae60b5c3e2a41ed9d2838fe92a25cad
+      type: code
+      sortingKey: am
+      content: |
+        for columna, tipo in viajes.schema.items():
+            print(f"{columna:<25} {tipo}")
+    - id: be6dd2399ead49cc91d67a8d4c35ac41
+      blockGroup: be6dd2399ead49cc91d67a8d4c35ac41
+      type: text-cell-h2
+      sortingKey: an
+      content: 5. Una pregunta de negocio, en SQL
+    - id: eb4bb9a4788b4d3b9d474d689e2697f7
+      blockGroup: eb4bb9a4788b4d3b9d474d689e2697f7
+      type: text-cell-p
+      sortingKey: ao
+      content: Este bloque es de tipo SQL. Puede consultar directamente los DataFrames que ya tienes en
+        memoria, sin configurar ninguna base de datos. Lo veremos a fondo en la sesión 4.
+    - id: 49e896ec080b46fb9fa623153cd65735
+      blockGroup: 49e896ec080b46fb9fa623153cd65735
+      type: sql
+      sortingKey: ap
+      content: |
+        SELECT
+            payment_type AS tipo_pago,
+            COUNT(*) AS viajes,
+            ROUND(AVG(total_amount), 2) AS ticket_promedio
+        FROM viajes
+        GROUP BY payment_type
+        ORDER BY viajes DESC
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_pagos
+        deepnote_return_variable_type: dataframe
+    - id: 1ffdb0152b5a48b580bf664c99226ebf
+      blockGroup: 1ffdb0152b5a48b580bf664c99226ebf
+      type: text-cell-h2
+      sortingKey: aq
+      content: 6. Tu turno
+    - id: 24b541c18e6c47408e00a443bbaa9e84
+      blockGroup: 24b541c18e6c47408e00a443bbaa9e84
+      type: text-cell-h3
+      sortingKey: ar
+      content: 'Ejercicio 1: viajes compartidos'
+    - id: e8e8b7a1266f4db8940ac089148db6ca
+      blockGroup: e8e8b7a1266f4db8940ac089148db6ca
+      type: text-cell-p
+      sortingKey: as
+      content: Completa la celda siguiente para calcular cuántos viajes tuvieron más de un pasajero. Reemplaza
+        los puntos suspensivos por tu respuesta.
+    - id: f6836313a53946288384f8bdb7453363
+      blockGroup: f6836313a53946288384f8bdb7453363
+      type: code
+      sortingKey: at
+      content: |
+        # Pista: usa viajes.filter(...) y la columna passenger_count
+        viajes_compartidos = ...
 
-            print("Polars:", pl.__version__)
-            print("DuckDB:", duckdb.__version__)
-            print("Entorno listo.")
+        print(viajes_compartidos)
+    - id: 16e0fc532ed146f292fe50755c69e866
+      blockGroup: 16e0fc532ed146f292fe50755c69e866
+      type: text-cell-h3
+      sortingKey: au
+      content: 'Ejercicio 2: el viaje más caro'
+    - id: ebde14a44e80421ea7a84ade7eea587d
+      blockGroup: ebde14a44e80421ea7a84ade7eea587d
+      type: text-cell-p
+      sortingKey: av
+      content: Encuentra el viaje con el valor más alto de total_amount. Guarda esa fila completa en la
+        variable mas_caro y revisa su total_amount y su zona de origen (PULocationID).
+    - id: 2d610acb4c864ac8823d4bceac32fbf4
+      blockGroup: 2d610acb4c864ac8823d4bceac32fbf4
+      type: code
+      sortingKey: aw
+      content: |
+        # Pista: ordena viajes por total_amount de mayor a menor y toma la primera fila
+        mas_caro = ...
 
-        - id: 58ffa9fa62a7400ca19f85b5f33050b2
-          blockGroup: 58ffa9fa62a7400ca19f85b5f33050b2
-          type: text-cell-h2
-          sortingKey: a6
-          content: 2. Tu primer dataset
+        print(mas_caro.select("total_amount", "PULocationID"))
+    - id: 2903e544edba44679f2f931906af52f3
+      blockGroup: 2903e544edba44679f2f931906af52f3
+      type: text-cell-h3
+      sortingKey: ax
+      content: 'Ejercicio 3: la zona'
+    - id: d8ac2d8e228c46beb3af550e68769430
+      blockGroup: d8ac2d8e228c46beb3af550e68769430
+      type: text-cell-p
+      sortingKey: ay
+      content: Con la tabla zonas, encuentra el nombre de la zona (Zone) y su Borough para el viaje del
+        ejercicio 2. Primero guarda el número de zona en la variable id_zona.
+    - id: 3ec9de156d824dc891ced3654b91297b
+      blockGroup: 3ec9de156d824dc891ced3654b91297b
+      type: code
+      sortingKey: az
+      content: |
+        # Pista: id_zona sale de mas_caro (columna PULocationID).
+        # Después filtra zonas por LocationID para ver el nombre y el Borough.
+        id_zona = ...
 
-        - id: 525e1dac137b46e68937375a42d640d8
-          blockGroup: 525e1dac137b46e68937375a42d640d8
-          type: text-cell-p
-          sortingKey: a7
-          content: >-
-            Vamos a trabajar todo el curso con los viajes de taxi de Nueva York.
-            El archivo pesa unos 50 MB, pero contiene casi tres millones de
-            registros. Lo descargamos directo desde la fuente oficial, sin subir
-            nada a mano.
+        print(id_zona)
+    - id: 7b6beabb87cb4687802a69a4858fa102
+      blockGroup: 7b6beabb87cb4687802a69a4858fa102
+      type: text-cell-h2
+      sortingKey: b0
+      content: Verificación
+    - id: 094478ec355447e8ab4f21d88573a60b
+      blockGroup: 094478ec355447e8ab4f21d88573a60b
+      type: text-cell-p
+      sortingKey: b1
+      content: Ejecuta esta celda para revisar tu trabajo. Si algo falla, el mensaje te dice qué corregir.
+        Esta celda no se modifica.
+    - id: e03e8e9e9bed4fc282a84b37068f7607
+      blockGroup: e03e8e9e9bed4fc282a84b37068f7607
+      type: code
+      sortingKey: b2
+      content: |
+        def verificar_sesion_01():
+            fallos = []
+            ns = globals()
 
-        - id: 2c27b45bc9f34cbda74bd7e874a42737
-          blockGroup: 2c27b45bc9f34cbda74bd7e874a42737
-          type: code
-          sortingKey: a8
-          content: |
-            URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
-            URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+            if viajes.height != 2_964_624:
+                fallos.append("El dataset de viajes no tiene el número esperado de filas.")
 
-            viajes = pl.read_parquet(URL_VIAJES)
-            zonas = pl.read_csv(URL_ZONAS)
+            if not Path("datos/viajes_2024_01.parquet").exists():
+                fallos.append("Falta guardar el parquet en la carpeta datos/.")
 
-            print(f"Viajes:  {viajes.height:,} filas x {viajes.width} columnas")
-            print(f"Zonas:   {zonas.height:,} filas x {zonas.width} columnas")
+            # Ejercicio 1
+            compartidos = ns.get("viajes_compartidos", ...)
+            if compartidos is ...:
+                fallos.append("El ejercicio 1 sigue sin resolver.")
+            elif not isinstance(compartidos, int):
+                fallos.append("viajes_compartidos debe ser un número entero.")
 
-        - id: c18db0f3b53a41f69a765f56c7498341
-          blockGroup: c18db0f3b53a41f69a765f56c7498341
-          type: text-cell-p
-          sortingKey: a9
-          content: >-
-            Guardamos una copia local para no volver a descargarla en cada
-            sesión. Los archivos de la carpeta de trabajo sí se conservan cuando
-            la máquina se apaga.
+            # Ejercicio 2
+            caro = ns.get("mas_caro", ...)
+            if caro is ...:
+                fallos.append("El ejercicio 2 sigue sin resolver.")
+            elif not isinstance(caro, pl.DataFrame) or caro.height != 1:
+                fallos.append("mas_caro debe ser una tabla de una sola fila.")
 
-        - id: c08af8115c2746be803fb4676a570d69
-          blockGroup: c08af8115c2746be803fb4676a570d69
-          type: code
-          sortingKey: b0
-          content: |
-            from pathlib import Path
+            # Ejercicio 3
+            zona = ns.get("id_zona", ...)
+            if zona is ...:
+                fallos.append("El ejercicio 3 sigue sin resolver.")
+            elif not isinstance(zona, int):
+                fallos.append("id_zona debe ser un número entero.")
+            elif isinstance(caro, pl.DataFrame) and caro.height == 1 and zona != caro["PULocationID"][0]:
+                fallos.append("id_zona debe ser la zona de origen (PULocationID) del viaje más caro.")
 
-            Path("datos").mkdir(exist_ok=True)
-            viajes.write_parquet("datos/viajes_2024_01.parquet")
-            zonas.write_csv("datos/zonas.csv")
+            if fallos:
+                for f in fallos:
+                    print("Pendiente:", f)
+            else:
+                print("Sesión 1 completa. Nos vemos en la siguiente.")
 
-            print("Archivos guardados en la carpeta datos/")
-
-        - id: 3206d5127f6e43ca873b24164fd4c049
-          blockGroup: 3206d5127f6e43ca873b24164fd4c049
-          type: text-cell-h2
-          sortingKey: b1
-          content: 3. Mirar los datos antes de tocarlos
-
-        - id: 43f0c7d0f6944063aab5434a7ef0ef91
-          blockGroup: 43f0c7d0f6944063aab5434a7ef0ef91
-          type: text-cell-p
-          sortingKey: b2
-          content: >-
-            La primera regla del oficio es mirar los datos antes de hacer nada
-            con ellos. Cuántas filas hay, qué columnas, de qué tipo es cada una.
-
-        - id: 1bbef6d48b4d46de8500d9f235dd4350
-          blockGroup: 1bbef6d48b4d46de8500d9f235dd4350
-          type: code
-          sortingKey: b3
-          content: |
-            viajes.head(5)
-
-        - id: 3ae60b5c3e2a41ed9d2838fe92a25cad
-          blockGroup: 3ae60b5c3e2a41ed9d2838fe92a25cad
-          type: code
-          sortingKey: b4
-          content: |
-            for columna, tipo in viajes.schema.items():
-                print(f"{columna:<25} {tipo}")
-
-        - id: be6dd2399ead49cc91d67a8d4c35ac41
-          blockGroup: be6dd2399ead49cc91d67a8d4c35ac41
-          type: text-cell-h2
-          sortingKey: b5
-          content: 4. Una pregunta de negocio, en SQL
-
-        - id: eb4bb9a4788b4d3b9d474d689e2697f7
-          blockGroup: eb4bb9a4788b4d3b9d474d689e2697f7
-          type: text-cell-p
-          sortingKey: b6
-          content: >-
-            Este bloque es de tipo SQL. Puede consultar directamente los
-            DataFrames que ya tienes en memoria, sin configurar ninguna base de
-            datos. Lo veremos a fondo en la sesión 4.
-
-        - id: 49e896ec080b46fb9fa623153cd65735
-          blockGroup: 49e896ec080b46fb9fa623153cd65735
-          type: sql
-          sortingKey: b7
-          content: |
-            SELECT
-                payment_type AS tipo_pago,
-                COUNT(*) AS viajes,
-                ROUND(AVG(total_amount), 2) AS ticket_promedio
-            FROM viajes
-            GROUP BY payment_type
-            ORDER BY viajes DESC
-          metadata:
-            sql_integration_id: deepnote-dataframe-sql
-            deepnote_variable_name: df_pagos
-            deepnote_return_variable_type: dataframe
-
-        - id: 1ffdb0152b5a48b580bf664c99226ebf
-          blockGroup: 1ffdb0152b5a48b580bf664c99226ebf
-          type: text-cell-h2
-          sortingKey: b8
-          content: 5. Tu turno
-
-        - id: e8e8b7a1266f4db8940ac089148db6ca
-          blockGroup: e8e8b7a1266f4db8940ac089148db6ca
-          type: text-cell-p
-          sortingKey: b9
-          content: >-
-            Completa la celda siguiente para calcular cuántos viajes tuvieron
-            más de un pasajero. Reemplaza los puntos suspensivos por tu
-            respuesta.
-
-        - id: f6836313a53946288384f8bdb7453363
-          blockGroup: f6836313a53946288384f8bdb7453363
-          type: code
-          sortingKey: c0
-          content: |
-            # Pista: usa viajes.filter(...) y la columna passenger_count
-            viajes_compartidos = ...
-
-            print(viajes_compartidos)
-
-        - id: 7b6beabb87cb4687802a69a4858fa102
-          blockGroup: 7b6beabb87cb4687802a69a4858fa102
-          type: text-cell-h2
-          sortingKey: c1
-          content: Verificación
-
-        - id: 094478ec355447e8ab4f21d88573a60b
-          blockGroup: 094478ec355447e8ab4f21d88573a60b
-          type: text-cell-p
-          sortingKey: c2
-          content: >-
-            Ejecuta esta celda para revisar tu trabajo. Si algo falla, el mensaje
-            te dice qué corregir. Esta celda no se modifica.
-
-        - id: e03e8e9e9bed4fc282a84b37068f7607
-          blockGroup: e03e8e9e9bed4fc282a84b37068f7607
-          type: code
-          sortingKey: c3
-          content: |
-            def verificar_sesion_01():
-                fallos = []
-
-                if viajes.height != 2_964_624:
-                    fallos.append("El dataset de viajes no tiene el número esperado de filas.")
-
-                if not Path("datos/viajes_2024_01.parquet").exists():
-                    fallos.append("Falta guardar el parquet en la carpeta datos/.")
-
-                if isinstance(viajes_compartidos, type(Ellipsis)):
-                    fallos.append("El ejercicio 5 sigue sin resolver.")
-                elif not isinstance(viajes_compartidos, int):
-                    fallos.append("viajes_compartidos debe ser un número entero.")
-
-                if fallos:
-                    for f in fallos:
-                        print("Pendiente:", f)
-                else:
-                    print("Sesión 1 completa. Nos vemos en la siguiente.")
-
-            verificar_sesion_01()
-
+        verificar_sesion_01()
   settings:
     requirements:
-      - polars==1.43.2
-      - duckdb
-      - pandera
-      - plotly
-      - pyarrow
+    - polars==1.43.2
+    - duckdb
+    - pandera
+    - plotly
+    - pyarrow
 environment:
   python:
     environment: uv
-    version: "3.13"
+    version: '3.13'
