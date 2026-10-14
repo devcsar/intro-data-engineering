@@ -1,0 +1,12 @@
+.env
+.venv/
+runtime/.venv/
+workspace/
+datos/
+snapshots/
+.files/_deepnote_static/
+node_modules/
+__pycache__/
+*.log
+clave/
+entregas/

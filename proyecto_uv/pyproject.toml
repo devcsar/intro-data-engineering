@@ -1,0 +1,11 @@
+[project]
+name = "proyecto-uv"
+version = "0.1.0"
+description = "Pipeline bronze, silver y gold con Polars, DuckDB y Pandera"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "polars==1.43.2",
+    "duckdb",
+    "pandera",
+]

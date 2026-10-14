@@ -1,0 +1,5 @@
+polars==1.43.2
+duckdb
+pandera
+plotly
+pyarrow

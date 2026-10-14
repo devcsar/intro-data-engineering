@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Atajo del curso. Uso: ./scripts/dn <comando> [archivo]
+set -euo pipefail
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+[ -f "${RAIZ}/.env" ] && set -a && . "${RAIZ}/.env" && set +a
+
+case "${1:-}" in
+  check)   deepnote validate "${2}" ;;
+  lint)    deepnote lint     "${2}" ;;
+  stats)   deepnote stats    "${2}" ;;
+  revisar) deepnote analyze  "${2}" ;;
+  subir)   deepnote open     "${2}" ;;
+  todo)
+    for f in "${RAIZ}"/notebooks/*.deepnote; do
+      [ -e "$f" ] || continue
+      printf "%-30s " "$(basename "$f")"
+      deepnote validate "$f" >/dev/null 2>&1 && echo "ok" || echo "FALLA"
+    done ;;
+  *)
+    echo "Uso: ./scripts/dn {check|lint|stats|revisar|subir} <archivo.deepnote>"
+    echo "     ./scripts/dn todo     valida todos los notebooks"
+    exit 2 ;;
+esac
