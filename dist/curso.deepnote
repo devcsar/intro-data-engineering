@@ -2000,6 +2000,1741 @@ project:
             if Path(ruta).exists():
                 Path(ruta).unlink()
         print("Archivos temporales borrados. Quedan:", sorted(p.name for p in CARPETA.iterdir()))
+  - id: 442ad596-5f8d-4ab0-b81a-c6eed4d8e330
+    name: S04 - SQL I consultas joins y agregaciones
+    executionMode: block
+    isModule: false
+    blocks:
+    - id: 29491d6e4b6742dcbda87e993a0bca18
+      blockGroup: 29491d6e4b6742dcbda87e993a0bca18
+      type: text-cell-h1
+      sortingKey: a0
+      content: Sesión 4, SQL I
+    - id: a137d0c91be74c65b893993b87885fa3
+      blockGroup: a137d0c91be74c65b893993b87885fa3
+      type: text-cell-callout
+      sortingKey: a1
+      content: Antes de empezar, presiona "Run all" arriba a la derecha. Vas a hacer esto al inicio de
+        cada sesión. La máquina se apaga sola después de 15 minutos sin actividad, y al encenderse otra
+        vez las variables se pierden, aunque tu código y tus archivos siguen ahí.
+      metadata:
+        color: blue
+    - id: b504cf1ffb7d4d7c81e2fbffafd426e3
+      blockGroup: b504cf1ffb7d4d7c81e2fbffafd426e3
+      type: text-cell-p
+      sortingKey: a2
+      content: 'Al terminar esta sesión vas a saber hacerle preguntas a los datos con SQL: filtrar, ordenar,
+        unir tablas y resumir. Todo lo que escribas aquí corre igual en un bloque SQL y con duckdb.sql().'
+    - id: 626460f0a49042578f5e72e4bd313079
+      blockGroup: 626460f0a49042578f5e72e4bd313079
+      type: text-cell-h2
+      sortingKey: a3
+      content: Preparar el entorno
+    - id: 0660b0eccfc243309df804cac485a89a
+      blockGroup: 0660b0eccfc243309df804cac485a89a
+      type: text-cell-p
+      sortingKey: a4
+      content: Esta celda instala las librerías del curso con uv, un instalador de Python muy rápido.
+        Lee la lista del archivo requirements.txt del proyecto. Se ejecuta en segundos y es seguro volver
+        a correrla.
+    - id: d06a95761f694b40be460f07ff123185
+      blockGroup: d06a95761f694b40be460f07ff123185
+      type: code
+      sortingKey: a5
+      content: |
+        import sys
+
+        !pip install -q uv
+        !uv pip install -q --python {sys.executable} -r requirements.txt
+    - id: 6e10feb662864ea5ad8b2263f8a62828
+      blockGroup: 6e10feb662864ea5ad8b2263f8a62828
+      type: text-cell-h2
+      sortingKey: a6
+      content: 0. Cargar los datos
+    - id: 930a1b83c23c486aa9a59213f4d6491b
+      blockGroup: 930a1b83c23c486aa9a59213f4d6491b
+      type: text-cell-p
+      sortingKey: a7
+      content: Cargamos los viajes y las zonas, y traemos DuckDB, el motor que ejecuta el SQL.
+    - id: 7c0d887231ca4cfdb4b8eb61eb10d17a
+      blockGroup: 7c0d887231ca4cfdb4b8eb61eb10d17a
+      type: code
+      sortingKey: a8
+      content: |
+        import duckdb
+        import polars as pl
+        from pathlib import Path
+
+        URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+        RUTA_VIAJES = Path("datos/viajes_2024_01.parquet")
+        RUTA_ZONAS = Path("datos/zonas.csv")
+        Path("datos").mkdir(exist_ok=True)
+
+        # Si ya los guardamos en sesiones anteriores, se leen del disco. Si no, se descargan.
+        if RUTA_VIAJES.exists():
+            viajes = pl.read_parquet(RUTA_VIAJES)
+        else:
+            viajes = pl.read_parquet(URL_VIAJES)
+            viajes.write_parquet(RUTA_VIAJES)
+
+        if RUTA_ZONAS.exists():
+            zonas = pl.read_csv(RUTA_ZONAS)
+        else:
+            zonas = pl.read_csv(URL_ZONAS)
+            zonas.write_csv(RUTA_ZONAS)
+
+        print(f"Viajes: {viajes.height:,} filas x {viajes.width} columnas")
+        print(f"Zonas:  {zonas.height:,} filas x {zonas.width} columnas")
+    - id: c033908f0f114d9bb3c6cb9ec376109d
+      blockGroup: c033908f0f114d9bb3c6cb9ec376109d
+      type: text-cell-h2
+      sortingKey: a9
+      content: 1. Tablas y llaves
+    - id: 14a66152ba704b578f52e7785627b1d6
+      blockGroup: 14a66152ba704b578f52e7785627b1d6
+      type: text-cell-p
+      sortingKey: aa
+      content: Una tabla tiene filas y columnas. La llave primaria identifica cada fila y no se repite
+        (LocationID en zonas). Una llave foránea apunta a la llave primaria de otra tabla (PULocationID
+        y DOLocationID en viajes).
+    - id: 9015e17c5eef47ce99c6106ea83dd4e0
+      blockGroup: 9015e17c5eef47ce99c6106ea83dd4e0
+      type: code
+      sortingKey: ab
+      content: |
+        # La dimensión: zonas. LocationID es su llave primaria (no debe repetirse)
+        print(zonas.columns)
+        print("Filas:", zonas.height, "| IDs distintos:", zonas["LocationID"].n_unique())
+        zonas.head(5)
+    - id: 72575e8ed23b415aab5476a75a849a7f
+      blockGroup: 72575e8ed23b415aab5476a75a849a7f
+      type: code
+      sortingKey: ac
+      content: |
+        # El hecho: viajes. PULocationID y DOLocationID son llaves foráneas hacia zonas
+        viajes.select("tpep_pickup_datetime", "PULocationID", "DOLocationID", "total_amount").head(5)
+    - id: 935b71868c6d45eb8df95c5ee39b8ea3
+      blockGroup: 935b71868c6d45eb8df95c5ee39b8ea3
+      type: text-cell-h2
+      sortingKey: ad
+      content: 2. Dos formas de correr SQL
+    - id: be6680dad6e940b8b16e7e3fee5042da
+      blockGroup: be6680dad6e940b8b16e7e3fee5042da
+      type: text-cell-p
+      sortingKey: ae
+      content: 'Forma A: un bloque SQL de Deepnote, que consulta directamente los DataFrames del notebook
+        y guarda el resultado en una variable. Forma B: la misma consulta en una celda de Python con duckdb.sql().
+        El nombre de la tabla es el nombre de la variable DataFrame. Las dos dan el mismo resultado.'
+    - id: 52ed601001214838ae679718be3071c9
+      blockGroup: 52ed601001214838ae679718be3071c9
+      type: sql
+      sortingKey: af
+      content: |
+        SELECT
+            COUNT(*) AS viajes,
+            COUNT(DISTINCT PULocationID) AS zonas_de_origen
+        FROM viajes
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_conteo
+        deepnote_return_variable_type: dataframe
+    - id: 119574d858704bd0b24fbc14a0c9e8e9
+      blockGroup: 119574d858704bd0b24fbc14a0c9e8e9
+      type: code
+      sortingKey: ag
+      content: |
+        # Forma B: la misma consulta con duckdb.sql(). El .pl() lo convierte en un DataFrame de Polars
+        df_conteo = duckdb.sql("""
+            SELECT
+                COUNT(*) AS viajes,
+                COUNT(DISTINCT PULocationID) AS zonas_de_origen
+            FROM viajes
+        """).pl()
+
+        df_conteo
+    - id: 90c0e81cbc63467baf5e3c688d5b19ab
+      blockGroup: 90c0e81cbc63467baf5e3c688d5b19ab
+      type: code
+      sortingKey: ah
+      content: |
+        # DuckDB también puede consultar los archivos directamente, sin cargar el DataFrame
+        duckdb.sql("""
+            SELECT COUNT(*) AS viajes
+            FROM 'datos/viajes_2024_01.parquet'
+        """).show()
+
+        duckdb.sql("""
+            SELECT COUNT(*) AS zonas
+            FROM 'datos/zonas.csv'
+        """).show()
+    - id: 1b893ee3c6944d6f8c6ff4ec98cb30f1
+      blockGroup: 1b893ee3c6944d6f8c6ff4ec98cb30f1
+      type: code
+      sortingKey: ai
+      content: |
+        def consulta(sql):
+            """Ejecuta SQL de DuckDB sobre las variables del notebook y devuelve un DataFrame de Polars."""
+            return duckdb.sql(sql).pl()
+
+
+        consulta("SELECT COUNT(*) AS zonas FROM zonas")
+    - id: 3c38e19b89ba4e15a3d3393dc88cdad7
+      blockGroup: 3c38e19b89ba4e15a3d3393dc88cdad7
+      type: text-cell-h2
+      sortingKey: aj
+      content: 3. SELECT, FROM y alias
+    - id: 1f731ed798454802bcfacd6db1a95ced
+      blockGroup: 1f731ed798454802bcfacd6db1a95ced
+      type: text-cell-p
+      sortingKey: ak
+      content: SELECT elige las columnas, FROM dice de qué tabla, AS les pone un alias y LIMIT corta el
+        número de filas.
+    - id: d6bd2d7dbdb84fa1b55dac94a6d66da0
+      blockGroup: d6bd2d7dbdb84fa1b55dac94a6d66da0
+      type: sql
+      sortingKey: al
+      content: |
+        SELECT
+            tpep_pickup_datetime,
+            PULocationID,
+            trip_distance,
+            total_amount
+        FROM viajes
+        LIMIT 5
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_basico
+        deepnote_return_variable_type: dataframe
+    - id: 1ea9292b642f420eb00773e7712ddabc
+      blockGroup: 1ea9292b642f420eb00773e7712ddabc
+      type: sql
+      sortingKey: am
+      content: |
+        SELECT
+            PULocationID AS zona_origen,
+            trip_distance AS millas,
+            ROUND(trip_distance * 1.60934, 2) AS kilometros,
+            total_amount AS total
+        FROM viajes
+        LIMIT 5
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_alias
+        deepnote_return_variable_type: dataframe
+    - id: efc4a65c37de4d12a63eb517caf4cea9
+      blockGroup: efc4a65c37de4d12a63eb517caf4cea9
+      type: code
+      sortingKey: an
+      content: |
+        df_alias = consulta("""
+            SELECT
+                PULocationID AS zona_origen,
+                trip_distance AS millas,
+                ROUND(trip_distance * 1.60934, 2) AS kilometros,
+                total_amount AS total
+            FROM viajes
+            LIMIT 5
+        """)
+        df_alias
+    - id: e838d0907e264145a4ef4fff425eff1e
+      blockGroup: e838d0907e264145a4ef4fff425eff1e
+      type: text-cell-h2
+      sortingKey: ao
+      content: 4. WHERE
+    - id: 1be3d252e885486aa4204fcaff9c8ac6
+      blockGroup: 1be3d252e885486aa4204fcaff9c8ac6
+      type: text-cell-p
+      sortingKey: ap
+      content: WHERE filtra filas con comparaciones (=, >, <), BETWEEN, IN, LIKE y las combina con AND
+        y OR.
+    - id: c1d2beafa632475db2b4d15f037252ea
+      blockGroup: c1d2beafa632475db2b4d15f037252ea
+      type: sql
+      sortingKey: aq
+      content: |
+        SELECT
+            PULocationID,
+            trip_distance,
+            total_amount,
+            payment_type
+        FROM viajes
+        WHERE trip_distance > 0
+          AND total_amount BETWEEN 10 AND 100
+          AND payment_type IN (1, 2)
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_filtro
+        deepnote_return_variable_type: dataframe
+    - id: b6976aa165f64574ba1df1c689b95748
+      blockGroup: b6976aa165f64574ba1df1c689b95748
+      type: sql
+      sortingKey: ar
+      content: |
+        SELECT LocationID, Zone, Borough
+        FROM zonas
+        WHERE Zone LIKE '%Airport%'
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_aeropuertos
+        deepnote_return_variable_type: dataframe
+    - id: 8f1b67dd6cbe4248b89ba9d4ce295580
+      blockGroup: 8f1b67dd6cbe4248b89ba9d4ce295580
+      type: text-cell-h2
+      sortingKey: as
+      content: 5. ORDER BY, LIMIT y DISTINCT
+    - id: d7f7996972d04d6f86a021503828012c
+      blockGroup: d7f7996972d04d6f86a021503828012c
+      type: text-cell-p
+      sortingKey: at
+      content: ORDER BY ordena (DESC de mayor a menor), LIMIT corta y DISTINCT quita repetidos.
+    - id: cecd8df1d5d2424e8917ca8ba27bbce2
+      blockGroup: cecd8df1d5d2424e8917ca8ba27bbce2
+      type: sql
+      sortingKey: au
+      content: |
+        SELECT
+            PULocationID,
+            trip_distance,
+            total_amount
+        FROM viajes
+        ORDER BY total_amount DESC
+        LIMIT 5
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_mas_caros
+        deepnote_return_variable_type: dataframe
+    - id: 0a237d8d31644cddb9ceab14be4223d0
+      blockGroup: 0a237d8d31644cddb9ceab14be4223d0
+      type: sql
+      sortingKey: av
+      content: |
+        SELECT DISTINCT payment_type
+        FROM viajes
+        ORDER BY payment_type
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_tipos_pago
+        deepnote_return_variable_type: dataframe
+    - id: f126b63999594e2c8816b44ad00ed74e
+      blockGroup: f126b63999594e2c8816b44ad00ed74e
+      type: text-cell-h2
+      sortingKey: aw
+      content: 6. Nulos
+    - id: 82c805ff7fae4f969b5299beaed07977
+      blockGroup: 82c805ff7fae4f969b5299beaed07977
+      type: text-cell-p
+      sortingKey: ax
+      content: Un nulo es un dato ausente. COUNT(*) cuenta todas las filas y COUNT(columna) ignora los
+        nulos. Para preguntar por nulos se usa IS NULL, nunca = NULL.
+    - id: 9a56b3179af74837809aa2063f645b7e
+      blockGroup: 9a56b3179af74837809aa2063f645b7e
+      type: sql
+      sortingKey: ay
+      content: |
+        SELECT
+            COUNT(*) AS filas,
+            COUNT(passenger_count) AS con_pasajeros,
+            COUNT(*) - COUNT(passenger_count) AS sin_pasajeros
+        FROM viajes
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_nulos
+        deepnote_return_variable_type: dataframe
+    - id: 3bd88a61ce3d43c096e25359362a4cbc
+      blockGroup: 3bd88a61ce3d43c096e25359362a4cbc
+      type: code
+      sortingKey: az
+      content: |
+        # El error clásico: comparar con = NULL no devuelve nada
+        mal = consulta("SELECT COUNT(*) AS filas FROM viajes WHERE passenger_count = NULL")
+        bien = consulta("SELECT COUNT(*) AS filas FROM viajes WHERE passenger_count IS NULL")
+        print("= NULL   :", mal["filas"][0])    # siempre 0
+        print("IS NULL  :", bien["filas"][0])
+    - id: e0bbb6c8eb59488faea12859810d382e
+      blockGroup: e0bbb6c8eb59488faea12859810d382e
+      type: sql
+      sortingKey: b0
+      content: |
+        SELECT
+            passenger_count,
+            COALESCE(passenger_count, 1) AS pasajeros_supuestos
+        FROM viajes
+        WHERE passenger_count IS NULL
+        LIMIT 5
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_coalesce
+        deepnote_return_variable_type: dataframe
+    - id: 399e4230550a4185a1f2c96994ffacfb
+      blockGroup: 399e4230550a4185a1f2c96994ffacfb
+      type: text-cell-h2
+      sortingKey: b1
+      content: 7. Práctica guiada
+    - id: 1fb109a7913f49aab2aec4e9c428472e
+      blockGroup: 1fb109a7913f49aab2aec4e9c428472e
+      type: text-cell-p
+      sortingKey: b2
+      content: 'Juntamos lo anterior: viajes de más de 10 millas con propina mayor a 5 dólares, de la
+        propina más alta a la más baja.'
+    - id: 48dffb380fe542138a757a1a9228e971
+      blockGroup: 48dffb380fe542138a757a1a9228e971
+      type: sql
+      sortingKey: b3
+      content: |
+        SELECT
+            tpep_pickup_datetime,
+            trip_distance,
+            tip_amount,
+            total_amount
+        FROM viajes
+        WHERE trip_distance > 10
+          AND tip_amount > 5
+        ORDER BY tip_amount DESC
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_largos_con_propina
+        deepnote_return_variable_type: dataframe
+    - id: 4af7f82e48574658ad01c242bca7c80b
+      blockGroup: 4af7f82e48574658ad01c242bca7c80b
+      type: text-cell-h2
+      sortingKey: b4
+      content: 8. INNER JOIN
+    - id: 62e1f0b33382465380aee8c6bcc6940a
+      blockGroup: 62e1f0b33382465380aee8c6bcc6940a
+      type: text-cell-p
+      sortingKey: b5
+      content: Un join une dos tablas por una llave. Viajes es la tabla de hechos y zonas es la dimensión.
+        INNER JOIN deja solo las filas que tienen pareja en las dos tablas.
+    - id: 265d31295eb74e61ae8f78afda7f5c64
+      blockGroup: 265d31295eb74e61ae8f78afda7f5c64
+      type: sql
+      sortingKey: b6
+      content: |
+        SELECT
+            v.PULocationID,
+            z.Zone AS zona_origen,
+            z.Borough AS borough_origen,
+            v.total_amount
+        FROM viajes AS v
+        INNER JOIN zonas AS z
+            ON v.PULocationID = z.LocationID
+        LIMIT 5
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_join
+        deepnote_return_variable_type: dataframe
+    - id: 3d20b9a200874e9a8e1c9fbc91e741e6
+      blockGroup: 3d20b9a200874e9a8e1c9fbc91e741e6
+      type: sql
+      sortingKey: b7
+      content: |
+        SELECT COUNT(*) AS filas_inner
+        FROM viajes AS v
+        INNER JOIN zonas AS z
+            ON v.PULocationID = z.LocationID
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_filas_inner
+        deepnote_return_variable_type: dataframe
+    - id: 6db9a0955dc141e4ad045ffa0699879c
+      blockGroup: 6db9a0955dc141e4ad045ffa0699879c
+      type: text-cell-h2
+      sortingKey: b8
+      content: 9. LEFT JOIN y filas huérfanas
+    - id: c572fe428903482b8f1f7a772d109bc2
+      blockGroup: c572fe428903482b8f1f7a772d109bc2
+      type: text-cell-p
+      sortingKey: b9
+      content: LEFT JOIN conserva todas las filas de la izquierda y deja nulos donde no hay pareja. Una
+        fila huérfana es un viaje cuya zona no existe en zonas. Para verlo con certeza, quitamos a propósito
+        las zonas 264 y 265 de una copia (zonas_reducida). Con INNER JOIN esos viajes desaparecen sin
+        avisar, con LEFT JOIN se quedan.
+    - id: 53cf40c2812546b9af6e35b28cbe303e
+      blockGroup: 53cf40c2812546b9af6e35b28cbe303e
+      type: code
+      sortingKey: ba
+      content: |
+        # Una copia de zonas SIN las zonas 264 y 265, para provocar filas huérfanas a propósito
+        zonas_reducida = zonas.filter(~pl.col("LocationID").is_in([264, 265]))
+        print(zonas.height, "->", zonas_reducida.height)
+    - id: 20ed92624af1444aa7bd1fcbd466e362
+      blockGroup: 20ed92624af1444aa7bd1fcbd466e362
+      type: sql
+      sortingKey: bb
+      content: |
+        SELECT 'INNER JOIN' AS tipo_join, COUNT(*) AS filas
+        FROM viajes AS v
+        INNER JOIN zonas_reducida AS z ON v.PULocationID = z.LocationID
+
+        UNION ALL
+
+        SELECT 'LEFT JOIN' AS tipo_join, COUNT(*) AS filas
+        FROM viajes AS v
+        LEFT JOIN zonas_reducida AS z ON v.PULocationID = z.LocationID
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_comparacion_join
+        deepnote_return_variable_type: dataframe
+    - id: b15a76adfed14912afb36e8d2c7dd93a
+      blockGroup: b15a76adfed14912afb36e8d2c7dd93a
+      type: sql
+      sortingKey: bc
+      content: |
+        SELECT
+            v.PULocationID,
+            COUNT(*) AS viajes
+        FROM viajes AS v
+        LEFT JOIN zonas_reducida AS z
+            ON v.PULocationID = z.LocationID
+        WHERE z.LocationID IS NULL
+        GROUP BY v.PULocationID
+        ORDER BY viajes DESC
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_huerfanos
+        deepnote_return_variable_type: dataframe
+    - id: 3b5841049b544601b90ef2b12330a687
+      blockGroup: 3b5841049b544601b90ef2b12330a687
+      type: sql
+      sortingKey: bd
+      content: |
+        SELECT
+            z.LocationID,
+            z.Borough,
+            z.Zone,
+            COUNT(*) AS viajes
+        FROM viajes AS v
+        INNER JOIN zonas AS z
+            ON v.PULocationID = z.LocationID
+        WHERE z.LocationID IN (264, 265)
+        GROUP BY z.LocationID, z.Borough, z.Zone
+        ORDER BY z.LocationID
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_unknown
+        deepnote_return_variable_type: dataframe
+    - id: d05cf813869f4d7b98dfedeb70574f4f
+      blockGroup: d05cf813869f4d7b98dfedeb70574f4f
+      type: code
+      sortingKey: be
+      content: |
+        # Control de calidad del join: contar antes y después. Si LEFT JOIN devuelve más filas
+        # que viajes, la llave de zonas está repetida (fan-out).
+        antes = viajes.height
+        despues = consulta("""
+            SELECT COUNT(*) AS filas
+            FROM viajes AS v
+            LEFT JOIN zonas AS z ON v.PULocationID = z.LocationID
+        """)["filas"][0]
+        print(f"Antes: {antes:,}   Después: {despues:,}   Iguales: {antes == despues}")
+    - id: 0bba28f5762143f7b25943b4f98f3743
+      blockGroup: 0bba28f5762143f7b25943b4f98f3743
+      type: text-cell-h2
+      sortingKey: bf
+      content: 10. Funciones de agregación
+    - id: 36d450e4d5504653baf81a6ed3dd77ab
+      blockGroup: 36d450e4d5504653baf81a6ed3dd77ab
+      type: text-cell-p
+      sortingKey: bg
+      content: 'COUNT, SUM, AVG, MIN y MAX resumen muchas filas en un valor y ignoran los nulos. Observa
+        el mínimo del resultado: si es negativo, ¿qué dice eso de la calidad de los datos?'
+    - id: da9bea8250ef4ac8b0300def3a2a0a4f
+      blockGroup: da9bea8250ef4ac8b0300def3a2a0a4f
+      type: sql
+      sortingKey: bh
+      content: |
+        SELECT
+            COUNT(*) AS viajes,
+            ROUND(SUM(total_amount), 2) AS ingreso_total,
+            ROUND(AVG(total_amount), 2) AS ticket_promedio,
+            MIN(total_amount) AS minimo,
+            MAX(total_amount) AS maximo
+        FROM viajes
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_resumen
+        deepnote_return_variable_type: dataframe
+    - id: e0f1044a3f114e9db2bcea2337622260
+      blockGroup: e0f1044a3f114e9db2bcea2337622260
+      type: text-cell-h2
+      sortingKey: bi
+      content: 11. GROUP BY
+    - id: 32a5c850c8f143ffa1ac50d39a283631
+      blockGroup: 32a5c850c8f143ffa1ac50d39a283631
+      type: text-cell-p
+      sortingKey: bj
+      content: 'GROUP BY calcula las agregaciones por grupo. Regla: toda columna del SELECT que no esté
+        dentro de una agregación debe estar en el GROUP BY.'
+    - id: 235166ef23454284b8f976b67881610f
+      blockGroup: 235166ef23454284b8f976b67881610f
+      type: sql
+      sortingKey: bk
+      content: |
+        SELECT
+            payment_type AS tipo_pago,
+            COUNT(*) AS viajes,
+            ROUND(AVG(tip_amount), 2) AS propina_promedio
+        FROM viajes
+        GROUP BY payment_type
+        ORDER BY viajes DESC
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_por_pago
+        deepnote_return_variable_type: dataframe
+    - id: f3d005d6a0bb454993f5427c718fddf7
+      blockGroup: f3d005d6a0bb454993f5427c718fddf7
+      type: code
+      sortingKey: bl
+      content: |
+        # El error clásico: olvidar el GROUP BY
+        try:
+            consulta("SELECT payment_type, COUNT(*) AS viajes FROM viajes")
+        except Exception as error:
+            print(type(error).__name__)
+            print(str(error).splitlines()[0])
+    - id: e71783238c554701990eca3508b1ae4a
+      blockGroup: e71783238c554701990eca3508b1ae4a
+      type: sql
+      sortingKey: bm
+      content: |
+        SELECT
+            COALESCE(z.Borough, 'Sin zona') AS borough,
+            COUNT(*) AS viajes,
+            ROUND(AVG(v.total_amount), 2) AS ticket_promedio
+        FROM viajes AS v
+        LEFT JOIN zonas AS z
+            ON v.PULocationID = z.LocationID
+        GROUP BY COALESCE(z.Borough, 'Sin zona')
+        ORDER BY viajes DESC
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_por_borough
+        deepnote_return_variable_type: dataframe
+    - id: d811da3dfc024fd2bcb898f781d907aa
+      blockGroup: d811da3dfc024fd2bcb898f781d907aa
+      type: sql
+      sortingKey: bn
+      content: |
+        SELECT
+            HOUR(tpep_pickup_datetime) AS hora,
+            COUNT(*) AS viajes
+        FROM viajes
+        GROUP BY HOUR(tpep_pickup_datetime)
+        ORDER BY hora
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_por_hora
+        deepnote_return_variable_type: dataframe
+    - id: a86830ec2fa64a869053a1e8546236e7
+      blockGroup: a86830ec2fa64a869053a1e8546236e7
+      type: text-cell-h2
+      sortingKey: bo
+      content: 12. HAVING
+    - id: 6e21f84cac52446e976abb8102763423
+      blockGroup: 6e21f84cac52446e976abb8102763423
+      type: text-cell-p
+      sortingKey: bp
+      content: WHERE filtra filas antes de agrupar. HAVING filtra grupos después de agrupar, y es donde
+        van las agregaciones.
+    - id: ad3c9cc337c54567ac1e1580a24a0c11
+      blockGroup: ad3c9cc337c54567ac1e1580a24a0c11
+      type: sql
+      sortingKey: bq
+      content: |
+        SELECT
+            PULocationID,
+            COUNT(*) AS viajes,
+            ROUND(AVG(total_amount), 2) AS ticket_promedio
+        FROM viajes
+        WHERE trip_distance > 0
+        GROUP BY PULocationID
+        HAVING COUNT(*) > 1000
+        ORDER BY ticket_promedio DESC
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_having
+        deepnote_return_variable_type: dataframe
+    - id: fb65d180e9b64d1fa56562121e99d6da
+      blockGroup: fb65d180e9b64d1fa56562121e99d6da
+      type: text-cell-h2
+      sortingKey: br
+      content: 13. Top 10 de zonas
+    - id: ca499e72319747d0bed3ea23ec1aa61e
+      blockGroup: ca499e72319747d0bed3ea23ec1aa61e
+      type: text-cell-p
+      sortingKey: bs
+      content: 'Para el top 10 de zonas de origen: unir, agrupar, contar, ordenar y limitar. Agrupamos
+        también por LocationID porque hay nombres de zona repetidos en la tabla.'
+    - id: da1f3f1e61bd4b9da2e7353a7271a31b
+      blockGroup: da1f3f1e61bd4b9da2e7353a7271a31b
+      type: sql
+      sortingKey: bt
+      content: |
+        SELECT
+            z.Zone AS zona,
+            z.Borough AS borough,
+            COUNT(*) AS viajes
+        FROM viajes AS v
+        INNER JOIN zonas AS z
+            ON v.PULocationID = z.LocationID
+        GROUP BY z.LocationID, z.Zone, z.Borough
+        ORDER BY viajes DESC
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_top10
+        deepnote_return_variable_type: dataframe
+    - id: 1a66d332d3d84539ba116d4e72679c27
+      blockGroup: 1a66d332d3d84539ba116d4e72679c27
+      type: code
+      sortingKey: bu
+      content: |
+        df_top10 = consulta("""
+            SELECT
+                z.Zone AS zona,
+                z.Borough AS borough,
+                COUNT(*) AS viajes
+            FROM viajes AS v
+            INNER JOIN zonas AS z
+                ON v.PULocationID = z.LocationID
+            GROUP BY z.LocationID, z.Zone, z.Borough
+            ORDER BY viajes DESC
+            LIMIT 10
+        """)
+        df_top10
+    - id: f7c2aa525aae43c2b055148ab2c46a17
+      blockGroup: f7c2aa525aae43c2b055148ab2c46a17
+      type: text-cell-h2
+      sortingKey: bv
+      content: '14. Tu turno: 5 consultas'
+    - id: 7a1797beee2e4b3caf8e5c108e865dbe
+      blockGroup: 7a1797beee2e4b3caf8e5c108e865dbe
+      type: text-cell-p
+      sortingKey: bw
+      content: Cada ejercicio es un bloque SQL con una variable de salida. Reemplaza el contenido del
+        bloque por tu consulta y ejecútalo. Mientras no lo hagas, el bloque devuelve una columna llamada
+        pendiente.
+    - id: b485ed1ef95a4d5c8de6f2348523cad0
+      blockGroup: b485ed1ef95a4d5c8de6f2348523cad0
+      type: text-cell-h3
+      sortingKey: bx
+      content: 'Ejercicio 1: los 5 viajes más caros'
+    - id: dc1bfbba151940b5b3101b77fb8cc450
+      blockGroup: dc1bfbba151940b5b3101b77fb8cc450
+      type: text-cell-p
+      sortingKey: by
+      content: 'Muestra los 5 viajes con mayor total_amount, con las columnas PULocationID, trip_distance
+        y total_amount, del más caro al menos caro. Variable de salida: df_ej1. Pista: ORDER BY ... DESC
+        y LIMIT.'
+    - id: 21626b1bbaa54dfcad74c07dcee7fcb7
+      blockGroup: 21626b1bbaa54dfcad74c07dcee7fcb7
+      type: sql
+      sortingKey: bz
+      content: |
+        -- Escribe tu consulta aquí
+        SELECT NULL AS pendiente
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ej1
+        deepnote_return_variable_type: dataframe
+    - id: e02c7db1b40a4566bc53c73170659871
+      blockGroup: e02c7db1b40a4566bc53c73170659871
+      type: text-cell-h3
+      sortingKey: c0
+      content: 'Ejercicio 2: viajes sin pasajeros registrados'
+    - id: 0d41a552c37142488a9e35d36ce2ed8e
+      blockGroup: 0d41a552c37142488a9e35d36ce2ed8e
+      type: text-cell-p
+      sortingKey: c1
+      content: 'Cuenta cuántos viajes tienen passenger_count nulo. El resultado es una fila con una columna
+        llamada viajes_sin_pasajeros. Variable de salida: df_ej2. Pista: COUNT(*) con WHERE ... IS NULL.'
+    - id: 02a78bbd77f9460894d353d8e38e6c5a
+      blockGroup: 02a78bbd77f9460894d353d8e38e6c5a
+      type: sql
+      sortingKey: c2
+      content: |
+        -- Escribe tu consulta aquí
+        SELECT NULL AS pendiente
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ej2
+        deepnote_return_variable_type: dataframe
+    - id: d7b6796129a3450c8d812f9fa69ca372
+      blockGroup: d7b6796129a3450c8d812f9fa69ca372
+      type: text-cell-h3
+      sortingKey: c3
+      content: 'Ejercicio 3: viajes por borough de origen'
+    - id: faa2ff3e10554526ad068afc430c068d
+      blockGroup: faa2ff3e10554526ad068afc430c068d
+      type: text-cell-p
+      sortingKey: c4
+      content: 'Cuenta los viajes por Borough de la zona de origen, usando LEFT JOIN entre viajes y zonas,
+        y poniendo el texto ''Sin zona'' cuando no haya zona. Columnas: borough y viajes. Ordena de más
+        a menos viajes. Variable de salida: df_ej3. Pista: LEFT JOIN, COALESCE y GROUP BY. La suma de
+        la columna viajes debe dar el total de filas de viajes.'
+    - id: 3ccc0f89c4da44fb923ac547b95de31d
+      blockGroup: 3ccc0f89c4da44fb923ac547b95de31d
+      type: sql
+      sortingKey: c5
+      content: |
+        -- Escribe tu consulta aquí
+        SELECT NULL AS pendiente
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ej3
+        deepnote_return_variable_type: dataframe
+    - id: 2349067483604c3a96212162ee985e4f
+      blockGroup: 2349067483604c3a96212162ee985e4f
+      type: text-cell-h3
+      sortingKey: c6
+      content: 'Ejercicio 4: tipos de pago con más de 1000 viajes'
+    - id: ae747fc190964ade8ce89924c47d30bf
+      blockGroup: ae747fc190964ade8ce89924c47d30bf
+      type: text-cell-p
+      sortingKey: c7
+      content: 'Para cada payment_type calcula el número de viajes y la propina promedio (redondeada a
+        2 decimales), y deja solo los tipos con más de 1000 viajes. Columnas: tipo_pago, viajes, propina_promedio.
+        Ordena por viajes de mayor a menor. Variable de salida: df_ej4. Pista: GROUP BY y HAVING.'
+    - id: 9d18f4e8a9a647bf89c49823ef7cdf2a
+      blockGroup: 9d18f4e8a9a647bf89c49823ef7cdf2a
+      type: sql
+      sortingKey: c8
+      content: |
+        -- Escribe tu consulta aquí
+        SELECT NULL AS pendiente
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ej4
+        deepnote_return_variable_type: dataframe
+    - id: ae1c25fc7613499ca1a23f8c589af36a
+      blockGroup: ae1c25fc7613499ca1a23f8c589af36a
+      type: text-cell-h3
+      sortingKey: c9
+      content: 'Ejercicio 5: top 10 de zonas de origen'
+    - id: f3d2c9e557e04ff7b33d4bf633464532
+      blockGroup: f3d2c9e557e04ff7b33d4bf633464532
+      type: text-cell-p
+      sortingKey: ca
+      content: 'Las 10 zonas desde donde salen más viajes. Columnas: zona, borough y viajes. Variable
+        de salida: df_ej5. Pista: INNER JOIN, GROUP BY por LocationID, Zone y Borough, ORDER BY y LIMIT.'
+    - id: 1b5225e3e104488bae2ac017da1f8ee7
+      blockGroup: 1b5225e3e104488bae2ac017da1f8ee7
+      type: sql
+      sortingKey: cb
+      content: |
+        -- Escribe tu consulta aquí
+        SELECT NULL AS pendiente
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ej5
+        deepnote_return_variable_type: dataframe
+    - id: 3e23c15ad077424588c87e7560ae3025
+      blockGroup: 3e23c15ad077424588c87e7560ae3025
+      type: text-cell-h2
+      sortingKey: cc
+      content: Verificación
+    - id: d69dead327b24b649afed59b79838e66
+      blockGroup: d69dead327b24b649afed59b79838e66
+      type: text-cell-p
+      sortingKey: cd
+      content: Ejecuta esta celda para revisar tu trabajo. Si algo falla, el mensaje te dice qué corregir.
+        Esta celda no se modifica.
+    - id: 3c5a5ccfc2144b0fad32136fc7bcd711
+      blockGroup: 3c5a5ccfc2144b0fad32136fc7bcd711
+      type: code
+      sortingKey: ce
+      content: |
+        def verificar_sesion_04():
+            g = globals()
+            pendientes = []
+
+            def definido(nombre):
+                return nombre in g and g[nombre] is not Ellipsis
+
+            def columnas(df):
+                return [str(c) for c in df.columns]
+
+            def valores(df, columna):
+                return list(df[columna])
+
+            def revisar(nombre, ejercicio, columnas_esperadas):
+                """Devuelve el DataFrame si existe y tiene las columnas esperadas, si no agrega un pendiente."""
+                if not definido(nombre):
+                    pendientes.append(f"{ejercicio}: falta el resultado {nombre}. Ejecuta el bloque SQL.")
+                    return None
+                df = g[nombre]
+                if not hasattr(df, "columns") or columnas(df) != columnas_esperadas:
+                    pendientes.append(f"{ejercicio}: las columnas de {nombre} deben ser {columnas_esperadas}.")
+                    return None
+                return df
+
+            # Datos
+            if not definido("viajes") or not definido("zonas"):
+                pendientes.append("Falta cargar los datos: ejecuta la sección 0.")
+            else:
+                if g["viajes"].height != 2_964_624 or g["viajes"].width != 19:
+                    pendientes.append("viajes no tiene el tamaño esperado (2,964,624 filas y 19 columnas).")
+                if g["zonas"].height != 265:
+                    pendientes.append("zonas no tiene las 265 zonas esperadas.")
+
+            # Ejercicio 1: 5 viajes más caros
+            df = revisar("df_ej1", "Ejercicio 1", ["PULocationID", "trip_distance", "total_amount"])
+            if df is not None:
+                totales = valores(df, "total_amount")
+                if len(df) != 5:
+                    pendientes.append("Ejercicio 1: el resultado debe tener 5 filas.")
+                elif totales != sorted(totales, reverse=True):
+                    pendientes.append("Ejercicio 1: ordena por total_amount de mayor a menor.")
+
+            # Ejercicio 2: pasajeros nulos
+            df = revisar("df_ej2", "Ejercicio 2", ["viajes_sin_pasajeros"])
+            if df is not None:
+                if len(df) != 1:
+                    pendientes.append("Ejercicio 2: el resultado debe tener una sola fila.")
+                else:
+                    n = int(valores(df, "viajes_sin_pasajeros")[0])
+                    if not 0 <= n <= 2_964_624:
+                        pendientes.append("Ejercicio 2: el conteo no tiene sentido, revisa el WHERE.")
+
+            # Ejercicio 3: viajes por borough con LEFT JOIN, la suma debe ser el total de filas
+            df = revisar("df_ej3", "Ejercicio 3", ["borough", "viajes"])
+            if df is not None:
+                if sum(int(x) for x in valores(df, "viajes")) != 2_964_624:
+                    pendientes.append("Ejercicio 3: la suma de viajes debe ser 2,964,624. Usa LEFT JOIN y COALESCE.")
+
+            # Ejercicio 4: GROUP BY con HAVING
+            df = revisar("df_ej4", "Ejercicio 4", ["tipo_pago", "viajes", "propina_promedio"])
+            if df is not None:
+                v = [int(x) for x in valores(df, "viajes")]
+                if len(v) == 0:
+                    pendientes.append("Ejercicio 4: el resultado está vacío, revisa el HAVING.")
+                elif not all(x > 1000 for x in v):
+                    pendientes.append("Ejercicio 4: todos los tipos deben tener más de 1000 viajes (HAVING).")
+                elif v != sorted(v, reverse=True):
+                    pendientes.append("Ejercicio 4: ordena por viajes de mayor a menor.")
+
+            # Ejercicio 5: top 10
+            df = revisar("df_ej5", "Ejercicio 5", ["zona", "borough", "viajes"])
+            if df is not None:
+                v = [int(x) for x in valores(df, "viajes")]
+                if len(v) != 10:
+                    pendientes.append("Ejercicio 5: el resultado debe tener 10 filas (LIMIT 10).")
+                elif v != sorted(v, reverse=True):
+                    pendientes.append("Ejercicio 5: ordena por viajes de mayor a menor.")
+
+            if pendientes:
+                for p in pendientes:
+                    print("Pendiente:", p)
+            else:
+                print("Sesión 4 completa. Nos vemos en la siguiente.")
+
+
+        verificar_sesion_04()
+  - id: c896a4c2-c85d-4448-a3e4-76389ca64b5d
+    name: S05 - SQL II y Data Warehousing
+    executionMode: block
+    isModule: false
+    blocks:
+    - id: 653d311f3f55498cad3e11eabed5fa5a
+      blockGroup: 653d311f3f55498cad3e11eabed5fa5a
+      type: text-cell-h1
+      sortingKey: a0
+      content: Sesión 5, SQL II y Data Warehousing
+    - id: 687f80beeb95410ebf73c296659cb054
+      blockGroup: 687f80beeb95410ebf73c296659cb054
+      type: text-cell-callout
+      sortingKey: a1
+      content: Antes de empezar, presiona "Run all" arriba a la derecha. Vas a hacer esto al inicio de
+        cada sesión. La máquina se apaga sola después de 15 minutos sin actividad, y al encenderse otra
+        vez las variables se pierden, aunque tu código y tus archivos siguen ahí.
+      metadata:
+        color: blue
+    - id: 0f2bf8bddb72429b801426af94ceaeab
+      blockGroup: 0f2bf8bddb72429b801426af94ceaeab
+      type: text-cell-p
+      sortingKey: a2
+      content: Al terminar esta sesión vas a escribir consultas con CTEs y window functions, y vas a diseñar
+        el star schema del dataset de taxis.
+    - id: ef9f7fa9b90d438f9e8119ae8dcc6797
+      blockGroup: ef9f7fa9b90d438f9e8119ae8dcc6797
+      type: text-cell-h2
+      sortingKey: a3
+      content: Preparar el entorno
+    - id: af95990fcb7348f8b572e15f1833bf3e
+      blockGroup: af95990fcb7348f8b572e15f1833bf3e
+      type: text-cell-p
+      sortingKey: a4
+      content: Esta celda instala las librerías del curso con uv, un instalador de Python muy rápido.
+        Lee la lista del archivo requirements.txt del proyecto. Se ejecuta en segundos y es seguro volver
+        a correrla.
+    - id: 37ed4e4f3c134c76b9e00db8d411b885
+      blockGroup: 37ed4e4f3c134c76b9e00db8d411b885
+      type: code
+      sortingKey: a5
+      content: |
+        import sys
+
+        !pip install -q uv
+        !uv pip install -q --python {sys.executable} -r requirements.txt
+    - id: e66d5d55f77443099e69d557c3ca6b0d
+      blockGroup: e66d5d55f77443099e69d557c3ca6b0d
+      type: text-cell-h2
+      sortingKey: a6
+      content: 1. Preparación
+    - id: fac780a0125242499a25b7db9ef18d3b
+      blockGroup: fac780a0125242499a25b7db9ef18d3b
+      type: code
+      sortingKey: a7
+      content: |
+        import polars as pl
+        import duckdb
+        from pathlib import Path
+
+        URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+        Path("datos").mkdir(exist_ok=True)
+        RUTA_VIAJES = Path("datos/viajes_2024_01.parquet")
+        RUTA_ZONAS = Path("datos/zonas.csv")
+
+        # Si el archivo ya existe en datos/ (sesión 1) se lee de ahí, si no, se descarga
+        viajes = pl.read_parquet(RUTA_VIAJES if RUTA_VIAJES.exists() else URL_VIAJES)
+        zonas = pl.read_csv(RUTA_ZONAS if RUTA_ZONAS.exists() else URL_ZONAS)
+
+        if not RUTA_VIAJES.exists():
+            viajes.write_parquet(RUTA_VIAJES)
+        if not RUTA_ZONAS.exists():
+            zonas.write_csv(RUTA_ZONAS)
+
+        print(f"Viajes: {viajes.height:,} filas x {viajes.width} columnas")
+        print(f"Zonas:  {zonas.height:,} filas x {zonas.width} columnas")
+    - id: 60181c159ce144dd962b5b3664a976f2
+      blockGroup: 60181c159ce144dd962b5b3664a976f2
+      type: text-cell-h2
+      sortingKey: a8
+      content: 2. Subconsultas
+    - id: eedb19bdbabc40fd855b20129c8e5e57
+      blockGroup: eedb19bdbabc40fd855b20129c8e5e57
+      type: text-cell-p
+      sortingKey: a9
+      content: Una subconsulta es una consulta dentro de otra, entre paréntesis. Puede ir en WHERE (para
+        comparar contra un valor calculado), con IN (contra una lista) o en FROM (como una tabla temporal,
+        con alias).
+    - id: 870b6349dcaa41749128e1cae325b819
+      blockGroup: 870b6349dcaa41749128e1cae325b819
+      type: sql
+      sortingKey: aa
+      content: |
+        -- Viajes que cuestan más que el promedio
+        SELECT COUNT(*) AS viajes_sobre_promedio
+        FROM viajes
+        WHERE total_amount > (SELECT AVG(total_amount) FROM viajes)
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_sobre_promedio
+        deepnote_return_variable_type: dataframe
+    - id: af0a11c9ccda4ec9baab28a24bf2779c
+      blockGroup: af0a11c9ccda4ec9baab28a24bf2779c
+      type: sql
+      sortingKey: ab
+      content: |
+        -- Origen en zonas de Manhattan, usando IN con una subconsulta
+        SELECT PULocationID, COUNT(*) AS viajes
+        FROM viajes
+        WHERE PULocationID IN (SELECT LocationID FROM zonas WHERE Borough = 'Manhattan')
+        GROUP BY PULocationID
+        ORDER BY viajes DESC
+        LIMIT 5
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_manhattan
+        deepnote_return_variable_type: dataframe
+    - id: 34958ddba0134dc293fefb76f964c3fb
+      blockGroup: 34958ddba0134dc293fefb76f964c3fb
+      type: sql
+      sortingKey: ac
+      content: |
+        -- Subconsulta en FROM: primero viajes por zona, luego su promedio
+        SELECT AVG(viajes) AS promedio_viajes_por_zona
+        FROM (
+            SELECT PULocationID, COUNT(*) AS viajes
+            FROM viajes
+            GROUP BY PULocationID
+        ) AS por_zona
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_promedio_zona
+        deepnote_return_variable_type: dataframe
+    - id: 001d18cb0c5d4abf84315086affecc6f
+      blockGroup: 001d18cb0c5d4abf84315086affecc6f
+      type: text-cell-h2
+      sortingKey: ad
+      content: 3. CTEs
+    - id: 9154461989104a2caf5cfd49cbd17d20
+      blockGroup: 9154461989104a2caf5cfd49cbd17d20
+      type: text-cell-p
+      sortingKey: ae
+      content: Una CTE le pone nombre a un paso de la consulta con WITH nombre AS (...). Se lee de arriba
+        hacia abajo, como una receta. Varias CTEs se encadenan con comas y cada una puede usar las anteriores.
+    - id: 7fcf700fd2a14ec7ada19606acf8cb78
+      blockGroup: 7fcf700fd2a14ec7ada19606acf8cb78
+      type: sql
+      sortingKey: af
+      content: |
+        WITH viajes_por_dia AS (
+            SELECT
+                CAST(tpep_pickup_datetime AS DATE) AS dia,
+                COUNT(*) AS n_viajes,
+                SUM(total_amount) AS ingreso
+            FROM viajes
+            GROUP BY 1
+        )
+        SELECT
+            dia,
+            n_viajes,
+            ingreso,
+            RANK() OVER (ORDER BY ingreso DESC) AS ranking
+        FROM viajes_por_dia
+        ORDER BY ranking
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ranking_dias
+        deepnote_return_variable_type: dataframe
+    - id: 2a44a696d08c4b58a83b888fdc824fce
+      blockGroup: 2a44a696d08c4b58a83b888fdc824fce
+      type: sql
+      sortingKey: ag
+      content: |
+        WITH viajes_limpios AS (
+            SELECT *
+            FROM viajes
+            WHERE trip_distance > 0 AND total_amount > 0
+        ),
+        por_zona AS (
+            SELECT
+                PULocationID,
+                COUNT(*) AS viajes,
+                AVG(total_amount) AS ticket_promedio
+            FROM viajes_limpios
+            GROUP BY PULocationID
+        )
+        SELECT
+            z.Zone,
+            p.viajes,
+            ROUND(p.ticket_promedio, 2) AS ticket_promedio
+        FROM por_zona AS p
+        JOIN zonas AS z ON p.PULocationID = z.LocationID
+        ORDER BY p.viajes DESC
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_zonas_limpias
+        deepnote_return_variable_type: dataframe
+    - id: cbf63d79e780429db9cb103c99a51544
+      blockGroup: cbf63d79e780429db9cb103c99a51544
+      type: text-cell-h2
+      sortingKey: ah
+      content: 4. CASE WHEN
+    - id: cf606c5d351a431ba171a42af3f19df4
+      blockGroup: cf606c5d351a431ba171a42af3f19df4
+      type: text-cell-p
+      sortingKey: ai
+      content: 'CASE WHEN pone condiciones dentro de la consulta para crear categorías. Termina con END
+        y conviene siempre poner ELSE: sin él, las filas que no cumplen ninguna condición quedan en NULL.'
+    - id: d28ebe478c614c30a54f19f80d8ffcbb
+      blockGroup: d28ebe478c614c30a54f19f80d8ffcbb
+      type: sql
+      sortingKey: aj
+      content: |
+        SELECT
+            CASE
+                WHEN trip_distance = 0 THEN 'sin distancia'
+                WHEN trip_distance < 2 THEN 'corto'
+                WHEN trip_distance < 10 THEN 'medio'
+                ELSE 'largo'
+            END AS tipo_viaje,
+            COUNT(*) AS viajes,
+            ROUND(AVG(total_amount), 2) AS ticket_promedio
+        FROM viajes
+        GROUP BY tipo_viaje
+        ORDER BY viajes DESC
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_tipo_viaje
+        deepnote_return_variable_type: dataframe
+    - id: c45de44084224e1f91c51a1d5efee7c9
+      blockGroup: c45de44084224e1f91c51a1d5efee7c9
+      type: sql
+      sortingKey: ak
+      content: |
+        -- CASE con valor exacto: traduce el código de payment_type
+        SELECT
+            CASE payment_type
+                WHEN 0 THEN 'Flex Fare'
+                WHEN 1 THEN 'Tarjeta'
+                WHEN 2 THEN 'Efectivo'
+                WHEN 3 THEN 'Sin cargo'
+                WHEN 4 THEN 'Disputa'
+                WHEN 5 THEN 'Desconocido'
+                WHEN 6 THEN 'Cancelado'
+                ELSE 'Otro'
+            END AS metodo_pago,
+            COUNT(*) AS viajes
+        FROM viajes
+        GROUP BY metodo_pago
+        ORDER BY viajes DESC
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_metodo_pago
+        deepnote_return_variable_type: dataframe
+    - id: 19ef625d6c7146d8b3d5c9b4d17a9c7e
+      blockGroup: 19ef625d6c7146d8b3d5c9b4d17a9c7e
+      type: text-cell-h2
+      sortingKey: al
+      content: 5. Window functions
+    - id: edf5e468193c4788b1fc1a1f641cd867
+      blockGroup: edf5e468193c4788b1fc1a1f641cd867
+      type: text-cell-p
+      sortingKey: am
+      content: 'Una window function calcula sobre un grupo sin colapsar las filas: cada fila conserva
+        su detalle y recibe un valor extra. OVER define la ventana, PARTITION BY la divide en grupos y
+        ORDER BY la ordena. RANK deja huecos en los empates y ROW_NUMBER no.'
+    - id: ae82264039a54c48977a80722c94cbaa
+      blockGroup: ae82264039a54c48977a80722c94cbaa
+      type: sql
+      sortingKey: an
+      content: |
+        -- Ranking global de zonas de origen. Compara RANK contra ROW_NUMBER en los empates
+        SELECT
+            Borough,
+            Zone,
+            viajes,
+            RANK() OVER (ORDER BY viajes DESC) AS rank_global,
+            ROW_NUMBER() OVER (ORDER BY viajes DESC) AS fila_global
+        FROM (
+            SELECT z.Borough, z.Zone, COUNT(*) AS viajes
+            FROM viajes AS v
+            JOIN zonas AS z ON v.PULocationID = z.LocationID
+            GROUP BY z.Borough, z.Zone
+        )
+        ORDER BY rank_global
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_ranking_zonas
+        deepnote_return_variable_type: dataframe
+    - id: c35b6bd58f7f4f0ea544b9fdfad98900
+      blockGroup: c35b6bd58f7f4f0ea544b9fdfad98900
+      type: sql
+      sortingKey: ao
+      content: |
+        WITH por_zona AS (
+            SELECT z.Borough, z.Zone, COUNT(*) AS viajes
+            FROM viajes AS v
+            JOIN zonas AS z ON v.PULocationID = z.LocationID
+            GROUP BY z.Borough, z.Zone
+        ),
+        ordenadas AS (
+            SELECT
+                Borough,
+                Zone,
+                viajes,
+                ROW_NUMBER() OVER (PARTITION BY Borough ORDER BY viajes DESC) AS posicion
+            FROM por_zona
+        )
+        SELECT *
+        FROM ordenadas
+        WHERE posicion <= 3
+        ORDER BY Borough, posicion
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_top3_borough
+        deepnote_return_variable_type: dataframe
+    - id: e6167223cb3c44d4b4490d54a17cd203
+      blockGroup: e6167223cb3c44d4b4490d54a17cd203
+      type: sql
+      sortingKey: ap
+      content: |
+        -- Mismo resultado, sin la segunda CTE. QUALIFY existe en DuckDB, no en todas las bases de datos
+        WITH por_zona AS (
+            SELECT z.Borough, z.Zone, COUNT(*) AS viajes
+            FROM viajes AS v
+            JOIN zonas AS z ON v.PULocationID = z.LocationID
+            GROUP BY z.Borough, z.Zone
+        )
+        SELECT
+            Borough,
+            Zone,
+            viajes,
+            ROW_NUMBER() OVER (PARTITION BY Borough ORDER BY viajes DESC) AS posicion
+        FROM por_zona
+        QUALIFY posicion <= 3
+        ORDER BY Borough, posicion
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_top3_qualify
+        deepnote_return_variable_type: dataframe
+    - id: 07535a80496d48f8aa8e86bde0b93900
+      blockGroup: 07535a80496d48f8aa8e86bde0b93900
+      type: sql
+      sortingKey: aq
+      content: |
+        WITH ingreso_diario AS (
+            SELECT
+                CAST(tpep_pickup_datetime AS DATE) AS dia,
+                SUM(total_amount) AS ingreso
+            FROM viajes
+            GROUP BY 1
+        )
+        SELECT
+            dia,
+            ROUND(ingreso, 2) AS ingreso,
+            ROUND(SUM(ingreso) OVER (ORDER BY dia), 2) AS ingreso_acumulado
+        FROM ingreso_diario
+        ORDER BY dia
+        LIMIT 10
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_acumulado
+        deepnote_return_variable_type: dataframe
+    - id: d839cdb5f4974449937535545f6951c3
+      blockGroup: d839cdb5f4974449937535545f6951c3
+      type: text-cell-h2
+      sortingKey: ar
+      content: 6. Normalizado contra desnormalizado
+    - id: 8818ca8e2b7a4144a28133aa7b5be02e
+      blockGroup: 8818ca8e2b7a4144a28133aa7b5be02e
+      type: text-cell-p
+      sortingKey: as
+      content: Normalizar es repartir los datos en varias tablas para no repetirlos (OLTP, el sistema
+        que registra cada viaje). Desnormalizar es juntarlos en una tabla ancha, con el nombre de la zona
+        escrito en cada fila, para que las consultas de análisis sean simples (OLAP). Compara el tamaño
+        en memoria de las dos formas.
+    - id: 3c3f33a2948042bcb1673110822838a0
+      blockGroup: 3c3f33a2948042bcb1673110822838a0
+      type: code
+      sortingKey: at
+      content: |
+        # Desnormalizar: una sola tabla ancha, con los nombres de zona ya escritos en cada fila
+        desnormalizada = duckdb.sql("""
+            SELECT
+                v.*,
+                o.Borough AS borough_origen,
+                o.Zone    AS zona_origen,
+                d.Borough AS borough_destino,
+                d.Zone    AS zona_destino
+            FROM viajes AS v
+            LEFT JOIN zonas AS o ON v.PULocationID = o.LocationID
+            LEFT JOIN zonas AS d ON v.DOLocationID = d.LocationID
+        """).pl()
+
+        print("Normalizado, viajes:", viajes.shape, f"{viajes.estimated_size('mb'):.0f} MB")
+        print("Desnormalizado:     ", desnormalizada.shape, f"{desnormalizada.estimated_size('mb'):.0f} MB")
+
+        # El nombre de la zona se repite en cada fila
+        muestra_zonas = desnormalizada.select("zona_origen").head(5)
+
+        # La tabla ancha ocupa más memoria que viajes. La máquina tiene 5 GB, así que la liberamos cuando ya no se usa
+        del desnormalizada
+        muestra_zonas
+    - id: 80323c1aaddb4e29bfb2a34ee2bc2a23
+      blockGroup: 80323c1aaddb4e29bfb2a34ee2bc2a23
+      type: text-cell-h2
+      sortingKey: au
+      content: 7. Lakehouse, medallion y ELT
+    - id: cd0e0246387d45668a47513dae72b7af
+      blockGroup: cd0e0246387d45668a47513dae72b7af
+      type: text-cell-p
+      sortingKey: av
+      content: 'La arquitectura medallion organiza los datos en tres capas. Bronze: el dato crudo tal
+        como llegó (el parquet original). Silver: el dato limpio (sin viajes de distancia cero). Gold:
+        el dato agregado y listo para consumir (ingreso por día). ETL transforma antes de cargar, ELT
+        carga lo crudo primero y transforma dentro del motor. Lo que haces aquí con SQL es ELT.'
+    - id: 1019b15397e94c68b44e1e3a521d8214
+      blockGroup: 1019b15397e94c68b44e1e3a521d8214
+      type: code
+      sortingKey: aw
+      content: |
+        con = duckdb.connect()          # base de datos DuckDB en memoria
+        con.register("viajes", viajes)  # le presentamos el DataFrame como tabla
+
+        # Bronze: el dato crudo, tal como llegó
+        con.sql("CREATE VIEW bronze AS SELECT * FROM viajes")
+
+        # Silver: limpio. Aquí se quitan los viajes con distancia o importe no positivo
+        con.sql("""
+            CREATE VIEW silver AS
+            SELECT *
+            FROM bronze
+            WHERE trip_distance > 0 AND total_amount > 0
+        """)
+
+        # Gold: agregado, listo para el consumo (un tablero, por ejemplo)
+        con.sql("""
+            CREATE TABLE gold_ingreso_diario AS
+            SELECT
+                CAST(tpep_pickup_datetime AS DATE) AS dia,
+                COUNT(*) AS viajes,
+                ROUND(SUM(total_amount), 2) AS ingreso
+            FROM silver
+            GROUP BY 1
+        """)
+
+        con.sql("SELECT * FROM gold_ingreso_diario ORDER BY dia LIMIT 5").show()
+        print("Bronze:", con.sql("SELECT COUNT(*) FROM bronze").fetchone()[0])
+        print("Silver:", con.sql("SELECT COUNT(*) FROM silver").fetchone()[0])
+    - id: 5e0045a4db734303945cb5fcd8fdbd4b
+      blockGroup: 5e0045a4db734303945cb5fcd8fdbd4b
+      type: code
+      sortingKey: ax
+      content: |
+        # ETL: se transforma ANTES de cargar (aquí con Polars, fuera del destino)
+        silver_etl = viajes.filter((pl.col("trip_distance") > 0) & (pl.col("total_amount") > 0))
+        print(f"Silver con ETL: {silver_etl.height:,} filas")
+        del silver_etl   # liberamos memoria, ya no la necesitamos
+
+        # ELT: se carga lo crudo (bronze) y se transforma DENTRO del motor SQL (silver, gold)
+        # Lo que ya hicimos en la celda anterior es ELT.
+
+        # Guardar la capa gold como Parquet para el consumo
+        con.sql("COPY gold_ingreso_diario TO 'datos/gold_ingreso_diario.parquet' (FORMAT PARQUET)")
+        print(pl.read_parquet("datos/gold_ingreso_diario.parquet").head(3))
+    - id: 20fc055ce77e460f819d4b7e50609772
+      blockGroup: 20fc055ce77e460f819d4b7e50609772
+      type: text-cell-h2
+      sortingKey: ay
+      content: 8. Star schema
+    - id: 37312acb237046b08f0c7c82385c99f2
+      blockGroup: 37312acb237046b08f0c7c82385c99f2
+      type: markdown
+      sortingKey: az
+      content: |
+        El modelo dimensional del taxi, en estrella:
+
+        - **Grano:** una fila por viaje.
+        - **Hecho:** fact_viajes, con las medidas passenger_count, trip_distance, fare_amount, tip_amount y total_amount.
+        - **Dimensiones:** zona de origen, zona de destino (la misma tabla de zonas con dos roles), tiempo (por hora) y método de pago.
+
+        En texto:
+
+        ```text
+                         dim_zona (origen)
+                                |
+        dim_tiempo ----- fact_viajes ----- dim_pago
+                                |
+                         dim_zona (destino)
+        ```
+
+        El mismo diagrama en Mermaid. Si Deepnote no lo dibuja, copia el código en mermaid.live:
+
+        ```mermaid
+        erDiagram
+            DIM_ZONA_ORIGEN ||--o{ FACT_VIAJES : "zona_origen_key"
+            DIM_ZONA_DESTINO ||--o{ FACT_VIAJES : "zona_destino_key"
+            DIM_TIEMPO ||--o{ FACT_VIAJES : "tiempo_key"
+            DIM_PAGO ||--o{ FACT_VIAJES : "pago_key"
+
+            FACT_VIAJES {
+                int zona_origen_key FK
+                int zona_destino_key FK
+                timestamp tiempo_key FK
+                int pago_key FK
+                int passenger_count
+                float trip_distance
+                float fare_amount
+                float tip_amount
+                float total_amount
+            }
+            DIM_ZONA_ORIGEN {
+                int zona_key PK
+                string Borough
+                string Zone
+                string service_zone
+            }
+            DIM_ZONA_DESTINO {
+                int zona_key PK
+                string Borough
+                string Zone
+                string service_zone
+            }
+            DIM_TIEMPO {
+                timestamp tiempo_key PK
+                date fecha
+                int hora
+                string dia_semana
+            }
+            DIM_PAGO {
+                int pago_key PK
+                string metodo_pago
+            }
+        ```
+    - id: 275985557f2e496382328679f82bdf1d
+      blockGroup: 275985557f2e496382328679f82bdf1d
+      type: sql
+      sortingKey: b0
+      content: |
+        WITH dim_zona_origen AS (
+            SELECT
+                LocationID AS zona_key,
+                Borough,
+                Zone,
+                service_zone
+            FROM zonas
+        ),
+        dim_zona_destino AS (
+            SELECT
+                LocationID AS zona_key,
+                Borough,
+                Zone,
+                service_zone
+            FROM zonas
+        ),
+        dim_pago AS (
+            SELECT * FROM (VALUES
+                (0, 'Flex Fare'),
+                (1, 'Tarjeta'),
+                (2, 'Efectivo'),
+                (3, 'Sin cargo'),
+                (4, 'Disputa'),
+                (5, 'Desconocido'),
+                (6, 'Cancelado')
+            ) AS t(pago_key, metodo_pago)
+        ),
+        dim_tiempo AS (
+            SELECT DISTINCT
+                date_trunc('hour', tpep_pickup_datetime) AS tiempo_key,
+                CAST(tpep_pickup_datetime AS DATE) AS fecha,
+                hour(tpep_pickup_datetime) AS hora,
+                dayname(tpep_pickup_datetime) AS dia_semana
+            FROM viajes
+        ),
+        fact_viajes AS (
+            SELECT
+                PULocationID AS zona_origen_key,
+                DOLocationID AS zona_destino_key,
+                date_trunc('hour', tpep_pickup_datetime) AS tiempo_key,
+                payment_type AS pago_key,
+                passenger_count,
+                trip_distance,
+                fare_amount,
+                tip_amount,
+                total_amount
+            FROM viajes
+        )
+        SELECT
+            o.Borough AS borough_origen,
+            d.Borough AS borough_destino,
+            t.dia_semana,
+            p.metodo_pago,
+            COUNT(*) AS viajes,
+            ROUND(SUM(f.total_amount), 2) AS ingreso
+        FROM fact_viajes AS f
+        LEFT JOIN dim_zona_origen AS o ON f.zona_origen_key = o.zona_key
+        LEFT JOIN dim_zona_destino AS d ON f.zona_destino_key = d.zona_key
+        LEFT JOIN dim_tiempo AS t ON f.tiempo_key = t.tiempo_key
+        LEFT JOIN dim_pago AS p ON f.pago_key = p.pago_key
+        GROUP BY o.Borough, d.Borough, t.dia_semana, p.metodo_pago
+        ORDER BY viajes DESC
+        LIMIT 20
+      metadata:
+        sql_integration_id: deepnote-dataframe-sql
+        deepnote_variable_name: df_star
+        deepnote_return_variable_type: dataframe
+    - id: 4acbbb1ea34e43eaaff634ed8862ca6f
+      blockGroup: 4acbbb1ea34e43eaaff634ed8862ca6f
+      type: code
+      sortingKey: b1
+      content: |
+        # Opcional: con CREATE TABLE el modelo queda guardado en la base DuckDB y se puede consultar muchas veces
+        con.sql("""
+            CREATE TABLE dim_pago AS
+            SELECT * FROM (VALUES
+                (0, 'Flex Fare'), (1, 'Tarjeta'), (2, 'Efectivo'), (3, 'Sin cargo'),
+                (4, 'Disputa'), (5, 'Desconocido'), (6, 'Cancelado')
+            ) AS t(pago_key, metodo_pago)
+        """)
+        con.sql("SELECT * FROM dim_pago").show()
+    - id: 7741eeaa67f54234aaa0ec7b367f59b6
+      blockGroup: 7741eeaa67f54234aaa0ec7b367f59b6
+      type: text-cell-h2
+      sortingKey: b2
+      content: 9. Tu turno
+    - id: 810414a20e834217b40ab2441d98976b
+      blockGroup: 810414a20e834217b40ab2441d98976b
+      type: text-cell-p
+      sortingKey: b3
+      content: Completa cada celda. Reemplaza los puntos suspensivos por tu código.
+    - id: e5abda4b079a498d90432486402cd6e9
+      blockGroup: e5abda4b079a498d90432486402cd6e9
+      type: text-cell-h3
+      sortingKey: b4
+      content: 'Ejercicio 1: subconsulta'
+    - id: 8227802c39e8473e8d796ef9ad53c4cc
+      blockGroup: 8227802c39e8473e8d796ef9ad53c4cc
+      type: text-cell-p
+      sortingKey: b5
+      content: Cuenta cuántos viajes tuvieron una distancia (trip_distance) mayor al promedio de todas
+        las distancias, usando una subconsulta. Guarda el número entero en la variable ej1_n.
+    - id: 08b190eee1c44ea3b783f071c12d2bc2
+      blockGroup: 08b190eee1c44ea3b783f071c12d2bc2
+      type: code
+      sortingKey: b6
+      content: |
+        # Pista: WHERE trip_distance > (SELECT AVG(trip_distance) FROM viajes)
+        # Usa .fetchone()[0] para sacar el número
+        ej1_n = ...
+
+        print(ej1_n)
+    - id: 80745007ec714ceb9e581c2a2eeff408
+      blockGroup: 80745007ec714ceb9e581c2a2eeff408
+      type: text-cell-h3
+      sortingKey: b7
+      content: 'Ejercicio 2: CASE WHEN'
+    - id: 25908b2dc3bb4eac84f08da960a8b793
+      blockGroup: 25908b2dc3bb4eac84f08da960a8b793
+      type: text-cell-p
+      sortingKey: b8
+      content: Clasifica los viajes en con propina (si tip_amount es mayor a 0) y sin propina, y calcula
+        cuántos viajes y qué ticket promedio tiene cada categoría. Guarda el DataFrame en ej2 con columnas
+        categoria, viajes y ticket_promedio.
+    - id: 810c43d89d4a4002b7cfcdc621949a25
+      blockGroup: 810c43d89d4a4002b7cfcdc621949a25
+      type: code
+      sortingKey: b9
+      content: |
+        # Pista: CASE WHEN tip_amount > 0 THEN ... ELSE ... END, GROUP BY y .pl() al final
+        # Columnas: categoria, viajes, ticket_promedio
+        ej2 = ...
+
+        print(ej2)
+    - id: 252ceea7cc9e425488fc8bbb780f6cbf
+      blockGroup: 252ceea7cc9e425488fc8bbb780f6cbf
+      type: text-cell-h3
+      sortingKey: ba
+      content: 'Ejercicio 3: top 3 zonas por Borough'
+    - id: f1e837b5d8da40ad9be46e3f98fb79a5
+      blockGroup: f1e837b5d8da40ad9be46e3f98fb79a5
+      type: text-cell-p
+      sortingKey: bb
+      content: Obtén las 3 zonas de origen con más viajes dentro de cada Borough. Guarda el resultado
+        en ej3 con columnas Borough, Zone, viajes y posicion.
+    - id: e1f2285c62cc41239011f861afa223cc
+      blockGroup: e1f2285c62cc41239011f861afa223cc
+      type: code
+      sortingKey: bc
+      content: |
+        # Pista: dos CTEs, ROW_NUMBER() OVER (PARTITION BY Borough ORDER BY viajes DESC), filtra posicion <= 3
+        # Columnas: Borough, Zone, viajes, posicion
+        ej3 = ...
+
+        print(ej3)
+    - id: b211879010ca4d53938e6de6d010468f
+      blockGroup: b211879010ca4d53938e6de6d010468f
+      type: text-cell-h3
+      sortingKey: bd
+      content: 'Ejercicio 4: el star schema con CTEs'
+    - id: e2e36b815fc8484c85f3a61645e68636
+      blockGroup: e2e36b815fc8484c85f3a61645e68636
+      type: text-cell-p
+      sortingKey: be
+      content: 'Ejercicio 4: dibuja en papel el star schema del taxi y luego créalo con CTEs. Pista: parte
+        del bloque del star schema y usa LEFT JOIN.'
+    - id: f79cf1d61ec04a57be4a1dcbbe725294
+      blockGroup: f79cf1d61ec04a57be4a1dcbbe725294
+      type: code
+      sortingKey: bf
+      content: |
+        # Columnas: borough_origen, metodo_pago, viajes
+        ej4 = ...
+
+        print(ej4)
+    - id: f6891f1f3d1f4fc3b2cabf8f8b8bd6aa
+      blockGroup: f6891f1f3d1f4fc3b2cabf8f8b8bd6aa
+      type: text-cell-h2
+      sortingKey: bg
+      content: Verificación
+    - id: 1b60d93011234f54ac52416f0bb3379b
+      blockGroup: 1b60d93011234f54ac52416f0bb3379b
+      type: text-cell-p
+      sortingKey: bh
+      content: Ejecuta esta celda para revisar tu trabajo. Si algo falla, el mensaje te dice qué corregir.
+        Esta celda no se modifica.
+    - id: f48f69b6a3e547dba418c66ed46d03a5
+      blockGroup: f48f69b6a3e547dba418c66ed46d03a5
+      type: code
+      sortingKey: bi
+      content: |
+        def verificar_sesion_05():
+            fallos = []
+            g = globals()
+
+            def pendiente(nombre):
+                return nombre not in g or g[nombre] is Ellipsis
+
+            # Datos base
+            if pendiente("viajes") or pendiente("zonas"):
+                fallos.append("Faltan las tablas viajes y zonas. Ejecuta Run all desde el principio.")
+            else:
+                if g["viajes"].height != 2_964_624:
+                    fallos.append("El dataset de viajes no tiene el número esperado de filas.")
+                if g["zonas"].height != 265:
+                    fallos.append("La tabla de zonas no tiene 265 filas.")
+
+            # Ejercicio 1: subconsulta
+            if pendiente("ej1_n"):
+                fallos.append("El ejercicio 1 sigue sin resolver (ej1_n).")
+            elif not isinstance(g["ej1_n"], int):
+                fallos.append("ej1_n debe ser un número entero.")
+            elif not pendiente("viajes"):
+                esperado = g["viajes"].filter(
+                    pl.col("trip_distance") > g["viajes"]["trip_distance"].mean()
+                ).height
+                if g["ej1_n"] != esperado:
+                    fallos.append("ej1_n no coincide con los viajes de distancia mayor al promedio.")
+
+            # Ejercicio 2: CASE WHEN
+            if pendiente("ej2"):
+                fallos.append("El ejercicio 2 sigue sin resolver (ej2).")
+            elif not isinstance(g["ej2"], pl.DataFrame):
+                fallos.append("ej2 debe ser un DataFrame de Polars (termina el duckdb.sql con .pl()).")
+            elif not {"categoria", "viajes", "ticket_promedio"}.issubset(g["ej2"].columns):
+                fallos.append("ej2 debe tener las columnas categoria, viajes y ticket_promedio.")
+            elif not pendiente("viajes") and g["ej2"]["viajes"].sum() != g["viajes"].height:
+                fallos.append("En ej2 la suma de viajes no cuadra con el total. Revisa el ELSE del CASE.")
+
+            # Ejercicio 3: top 3 por Borough
+            if pendiente("ej3"):
+                fallos.append("El ejercicio 3 sigue sin resolver (ej3).")
+            elif not isinstance(g["ej3"], pl.DataFrame):
+                fallos.append("ej3 debe ser un DataFrame de Polars (termina el duckdb.sql con .pl()).")
+            elif not {"Borough", "Zone", "viajes", "posicion"}.issubset(g["ej3"].columns):
+                fallos.append("ej3 debe tener las columnas Borough, Zone, viajes y posicion.")
+            elif g["ej3"].height == 0 or g["ej3"]["posicion"].max() > 3:
+                fallos.append("En ej3 solo deben quedar las posiciones 1, 2 y 3 de cada Borough.")
+
+            # Ejercicio 4: star schema
+            if pendiente("ej4"):
+                fallos.append("El ejercicio 4 sigue sin resolver (ej4).")
+            elif not isinstance(g["ej4"], pl.DataFrame):
+                fallos.append("ej4 debe ser un DataFrame de Polars (termina el duckdb.sql con .pl()).")
+            elif not {"borough_origen", "metodo_pago", "viajes"}.issubset(g["ej4"].columns):
+                fallos.append("ej4 debe tener las columnas borough_origen, metodo_pago y viajes.")
+            elif not pendiente("viajes") and g["ej4"]["viajes"].sum() != g["viajes"].height:
+                fallos.append("En ej4 se perdieron o se duplicaron viajes. Usa LEFT JOIN desde el hecho.")
+
+            if fallos:
+                for f in fallos:
+                    print("Pendiente:", f)
+            else:
+                print("Sesión 5 completa. Nos vemos en la siguiente.")
+
+        verificar_sesion_05()
   settings:
     requirements:
     - polars==1.43.2

@@ -11,6 +11,9 @@ Aquí se anota lo que se comprueba ejecutando los notebooks en Deepnote real. Un
 | 2026-10-14 | 1 | Deepnote (run detached, MCP) | **OK** (status success, sin errores) | 39 s | Tras corregir el SQL con `deepnote sync` (push). Descarga de 2,964,624 filas en 1 s, guardar el parquet 16 s, SQL 2.5 s. La verificación imprime los 3 "Pendiente" esperados. |
 | 2026-10-15 | 2 | Deepnote (run detached, MCP) | Se detiene en la celda rota 1 del taller (`NameError: distancia_kms`), como se diseñó | ~60 s hasta la celda rota | Todo lo anterior corre bien. La verificación antes del taller marca Pendiente los 5 ejercicios sin resolver. La versión con soluciones se probó en local: "Sesión 2 completa". |
 | 2026-10-15 | 3 | Deepnote (run detached, MCP) | **OK** (status success) | ~4 min 3 s | Máquina Basic, sin problemas de memoria ni de disco. Compresión 29 s, CSV escrito 13.6 s, NDJSON 29.3 s, lecturas de vuelta 21 s y 75 s. La limpieza final deja solo el Parquet y `zonas.csv`. |
+| 2026-10-15 | 4 | Deepnote (run detached, MCP) | **OK** (status success) | ~55 s | 26 bloques SQL con `deepnote-dataframe-sql` corren. La salida del bloque SQL es un DataFrame de pandas (con `.columns` y `len()`), y los nulos salen como `<NA>`. `duckdb.sql()` encuentra los DataFrames de Polars (`viajes`, `zonas`, `zonas_reducida`). La verificación marca los 5 ejercicios Pendiente. |
+| 2026-10-15 | 5 | Deepnote (run detached, MCP) | Primeros 2 intentos: `stopped`, "Execution was aborted" (el kernel se reinició) en el bloque SQL del star schema | ~50 s | Causa aislada con notebooks temporales (ya borrados): reutilizar la MISMA CTE dos veces (`dim_zona` como origen y destino) en un bloque SQL de Deepnote cierra el kernel en unos 3 s. No es memoria: la misma consulta con `duckdb.sql()` corre en 0.6 s usando +600 MB. Dos `JOIN` a la tabla `zonas` directa sí funcionan. |
+| 2026-10-15 | 5 | Deepnote (run detached, MCP) | **OK** (status success) | ~51 s | Tras definir dos CTEs, `dim_zona_origen` y `dim_zona_destino`. |
 
 ## Valores reales del dataset (reemplazan los "verificar en la nube" de las guías)
 
@@ -26,6 +29,15 @@ Aquí se anota lo que se comprueba ejecutando los notebooks en Deepnote real. Un
 | 3 | Tipo de `PULocationID` en el Parquet | Int32 | Esquema del Parquet |
 | 3 | Zonas: CSV contra Parquet (tarea 2) | 10,467 bytes contra 4,968 bytes | Ejecución local |
 | 3 | Plan de `scan_parquet().select().filter().explain()` | Incluye `PROJECT 3/19 COLUMNS` y `SELECTION: col("total_amount") > 100.0` | Run en la nube. Row groups del Parquet: 25 |
+| 4 | Viajes con origen en 264 y 265 | 10,360 (Unknown) y 1,658 (Outside of NYC) | Run en la nube |
+| 4 | Resumen de totales | 2,964,624 viajes, 79,456,384.28 dólares, ticket 26.80, mínimo -900.0, máximo 5000.0 | Run en la nube |
+| 4 | Viajes sin pasajeros (`passenger_count` nulo) | 140,162 | Run en la nube |
+| 4 | Tipos de pago con más de 1000 viajes | 5 (1, 2, 0, 4 y 3) | Ejecución local con DuckDB |
+| 4 | Tarea: distancia cero / total negativo | 60,371 / 35,504 viajes (suman -893,379.04) | Ejecución local con DuckDB |
+| 5 | Tamaño en memoria normalizado contra desnormalizado | 376 MB (19 columnas) contra 519 a 520 MB (23 columnas) | Local y nube |
+| 5 | Bronze contra silver | 2,964,624 contra 2,872,021 (92,603 menos) | Ejecución local |
+| 5 | Viajes con distancia mayor al promedio (`ej1_n`) | 623,986 | Ejecución local |
+| 5 | Fechas fuera de enero 2024 en `tpep_pickup_datetime` | 18 viajes (2002-12-31, 2009-01-01, 2023-12-31 y 2024-02-01) | Ejecución local |
 | | | | |
 
 ## Preguntas abiertas a confirmar
@@ -35,8 +47,8 @@ Aquí se anota lo que se comprueba ejecutando los notebooks en Deepnote real. Un
 - [x] Run all se detiene en la primera celda con error (taller de errores de la sesión 2). Sí se detiene (2026-10-15). El taller va al final, después de la verificación.
 - [x] Tiempos y espacio de CSV y NDJSON de la sesión 3 en la máquina Basic. Run all completo tarda unos 4 minutos y no hay problemas de memoria ni de disco (pico de unos 1.9 GB en `datos/` antes de la limpieza).
 - [x] `pyarrow` disponible en el proyecto (la demostración de Arrow de la sesión 3 corre).
-- [ ] Bloques SQL con CTE, `QUALIFY` y `VALUES` en `deepnote-dataframe-sql`
-- [ ] Mermaid se dibuja en Markdown de Deepnote
+- [x] Bloques SQL con CTE, `QUALIFY` y `VALUES` en `deepnote-dataframe-sql`. Sí corren (sesiones 4 y 5), con una excepción: una misma CTE usada dos veces en un bloque SQL cierra el kernel (ver arriba). La salida de un bloque SQL es un DataFrame de pandas con `.columns` y `len()`.
+- [ ] Mermaid se dibuja en Markdown de Deepnote. NO verificado: desde WSL no hay navegador y la API no devuelve el render. El notebook S05 trae el diagrama en un bloque Markdown con tres formas (lista, dibujo en texto y código Mermaid), así que sirve aunque no se dibuje. Falta que alguien abra S05 en Deepnote y mire la sección 8.
 - [ ] Salida real de `explain()` (sesión 6)
 - [ ] Plotly se muestra en el notebook (sesión 7)
 - [ ] `databricks/S08_notebook.py` ensayado en una cuenta Free de Databricks
