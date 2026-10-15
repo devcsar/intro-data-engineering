@@ -1,0 +1,882 @@
+version: 1.0.0
+metadata:
+  createdAt: '2026-10-15T00:48:34.000Z'
+project:
+  id: 18d5713a-29f4-4c3e-9523-d42785b93f49
+  name: Curso Data Engineering - Impact Click
+  notebooks:
+  - id: bde8ebf5-b2b3-4489-ae64-6192e7b1f21b
+    name: S02 - Python esencial para datos
+    executionMode: block
+    isModule: false
+    blocks:
+    - id: a44e1df37e3f442b8f1eeb1ac8eadffc
+      blockGroup: a44e1df37e3f442b8f1eeb1ac8eadffc
+      type: text-cell-h1
+      sortingKey: a0
+      content: Sesión 2, Python esencial para datos
+    - id: 87c5aa4a477b4679a3c52ca7c5ef1b12
+      blockGroup: 87c5aa4a477b4679a3c52ca7c5ef1b12
+      type: text-cell-callout
+      sortingKey: a1
+      content: 'Antes de empezar, presiona "Run all" arriba a la derecha. Vas a hacer esto al inicio de
+        cada sesión. La máquina se apaga sola después de 15 minutos sin actividad, y al encenderse otra
+        vez las variables se pierden, aunque tu código y tus archivos siguen ahí. Las celdas del taller
+        de errores, al final, están rotas a propósito: es parte de la clase, y Run all se detiene en ellas.'
+      metadata:
+        color: blue
+    - id: b9e989d81c164592b61d3313a94b1210
+      blockGroup: b9e989d81c164592b61d3313a94b1210
+      type: text-cell-p
+      sortingKey: a2
+      content: Al terminar esta sesión vas a saber usar variables, listas, diccionarios, ciclos y funciones,
+        y vas a poder leer un mensaje de error sin asustarte.
+    - id: 10352ea4e4b740a4aec4c993777f4f19
+      blockGroup: 10352ea4e4b740a4aec4c993777f4f19
+      type: text-cell-h2
+      sortingKey: a3
+      content: Preparar el entorno
+    - id: c230530879b840b9a37cd03fa5e89d04
+      blockGroup: c230530879b840b9a37cd03fa5e89d04
+      type: text-cell-p
+      sortingKey: a4
+      content: Esta celda instala las librerías del curso con uv, un instalador de Python muy rápido.
+        Lee la lista del archivo requirements.txt del proyecto. Se ejecuta en segundos y es seguro volver
+        a correrla.
+    - id: c04b18674c464e8299b1b96f96e9395c
+      blockGroup: c04b18674c464e8299b1b96f96e9395c
+      type: code
+      sortingKey: a5
+      content: |
+        import sys
+
+        !pip install -q uv
+        !uv pip install -q --python {sys.executable} -r requirements.txt
+    - id: 6f044214e08442908c7dd510e3589b37
+      blockGroup: 6f044214e08442908c7dd510e3589b37
+      type: text-cell-h2
+      sortingKey: a6
+      content: 0. Cargar los datos
+    - id: e716965ace51454795c4a4abe3d8e2dc
+      blockGroup: e716965ace51454795c4a4abe3d8e2dc
+      type: text-cell-p
+      sortingKey: a7
+      content: Cargamos los viajes de taxi y las zonas, igual que en la sesión 1. Si ya los guardaste
+        en la carpeta datos, se leen del disco. Si no, se descargan.
+    - id: 7302767411904285a90b6b150b5567ef
+      blockGroup: 7302767411904285a90b6b150b5567ef
+      type: code
+      sortingKey: a8
+      content: |
+        import polars as pl
+        from pathlib import Path
+
+        URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+        RUTA_VIAJES = Path("datos/viajes_2024_01.parquet")
+        RUTA_ZONAS = Path("datos/zonas.csv")
+        Path("datos").mkdir(exist_ok=True)
+
+        # Si ya los guardamos en la sesión 1, se leen del disco. Si no, se descargan.
+        if RUTA_VIAJES.exists():
+            viajes = pl.read_parquet(RUTA_VIAJES)
+        else:
+            viajes = pl.read_parquet(URL_VIAJES)
+            viajes.write_parquet(RUTA_VIAJES)
+
+        if RUTA_ZONAS.exists():
+            zonas = pl.read_csv(RUTA_ZONAS)
+        else:
+            zonas = pl.read_csv(URL_ZONAS)
+            zonas.write_csv(RUTA_ZONAS)
+
+        print(f"Viajes: {viajes.height:,} filas x {viajes.width} columnas")
+        print(f"Zonas:  {zonas.height:,} filas x {zonas.width} columnas")
+    - id: bf42e9f4575043a08b923145bdb10a23
+      blockGroup: bf42e9f4575043a08b923145bdb10a23
+      type: text-cell-h2
+      sortingKey: a9
+      content: 1. Variables y tipos
+    - id: 5219e749ae044e71a2239b6b04e3e438
+      blockGroup: 5219e749ae044e71a2239b6b04e3e438
+      type: text-cell-p
+      sortingKey: aa
+      content: 'Una variable es un nombre que apunta a un valor. Python deduce el tipo del valor: int
+        es un entero, float es un decimal, str es un texto y bool es verdadero o falso. Con type() puedes
+        preguntar el tipo de cualquier valor.'
+    - id: 226e1bc6f7d24edeaab67d5136d623cb
+      blockGroup: 226e1bc6f7d24edeaab67d5136d623cb
+      type: code
+      sortingKey: ab
+      content: |
+        # Una variable es un nombre que apunta a un valor
+        pasajeros = 2                       # int
+        distancia = 3.4                     # float (millas)
+        zona = "Midtown Center"             # str
+        pago_con_tarjeta = True             # bool
+
+        print(pasajeros, distancia, zona, pago_con_tarjeta)
+
+        # type() dice de qué tipo es cada valor
+        print(type(pasajeros))
+        print(type(distancia))
+        print(type(zona))
+        print(type(pago_con_tarjeta))
+    - id: 98fbe6d2d6b140ecb175fc2577042e8d
+      blockGroup: 98fbe6d2d6b140ecb175fc2577042e8d
+      type: code
+      sortingKey: ac
+      content: |
+        # Conversión de tipos (casting)
+        texto = "5"
+        numero = int(texto)
+        print(numero + 1)           # 6
+
+        print(float("3.5"))         # 3.5
+        print(str(42) + " viajes")  # "42 viajes"
+
+        # f-strings: texto con valores adentro
+        print(f"El viaje a {zona} fue de {distancia} millas con {pasajeros} pasajeros")
+    - id: 32063266a1c3421eabe786989dc267d2
+      blockGroup: 32063266a1c3421eabe786989dc267d2
+      type: text-cell-h2
+      sortingKey: ad
+      content: 2. Operadores
+    - id: 89ec812de2044c818b10095cde58cee4
+      blockGroup: 89ec812de2044c818b10095cde58cee4
+      type: text-cell-p
+      sortingKey: ae
+      content: 'Los operadores aritméticos calculan (+, -, *, /, // y %), los de comparación dan True
+        o False (==, !=, <, >), y los lógicos combinan condiciones (and, or, not). Ojo: un solo signo
+        = guarda un valor, dos signos == comparan.'
+    - id: cd32508c9ebb4f8fb6f52b244df20379
+      blockGroup: cd32508c9ebb4f8fb6f52b244df20379
+      type: code
+      sortingKey: af
+      content: |
+        tarifa = 18.5
+        propina = 3.7
+        total = tarifa + propina
+        porcentaje_propina = propina / tarifa * 100
+
+        print(f"Total: {total}")
+        print(f"Propina: {porcentaje_propina:.1f}%")   # un decimal
+
+        print(7 / 2)     # 3.5, siempre da float
+        print(7 // 2)    # 3, división entera
+        print(7 % 2)     # 1, residuo
+        print(2 ** 3)    # 8, potencia
+
+        # Un detalle de los decimales
+        print(0.1 + 0.2)           # 0.30000000000000004
+        print(round(0.1 + 0.2, 2)) # 0.3
+    - id: 7db8f4df3bee4db385055db2de6506ec
+      blockGroup: 7db8f4df3bee4db385055db2de6506ec
+      type: code
+      sortingKey: ag
+      content: |
+        # Comparación y lógicos, siempre dan True o False
+        distancia = 3.4
+        total = 22.2
+
+        print(distancia > 5)
+        print(distancia == 3.4)     # dos signos de igual para comparar
+        print(distancia != 0)
+        print(distancia > 0 and total > 0)
+        print(distancia > 10 or total > 20)
+        print(not (distancia > 10))
+        print("Airport" in "JFK Airport")
+    - id: 857a82fb16344992b81bd7b4e2cb04a9
+      blockGroup: 857a82fb16344992b81bd7b4e2cb04a9
+      type: text-cell-h2
+      sortingKey: ah
+      content: 3. Texto
+    - id: 49a5aa30ef104332b4473fcf51c4386c
+      blockGroup: 49a5aa30ef104332b4473fcf51c4386c
+      type: text-cell-p
+      sortingKey: ai
+      content: 'Lo mínimo que necesitamos de los textos: limpiar espacios, cambiar mayúsculas, contar
+        caracteres y buscar dentro.'
+    - id: 98bf485c241f43dcafb918bde1db20d7
+      blockGroup: 98bf485c241f43dcafb918bde1db20d7
+      type: code
+      sortingKey: aj
+      content: |
+        zona = "  Upper East Side South "
+        print(zona.strip())          # quita espacios de los lados
+        print(zona.strip().upper())  # MAYÚSCULAS
+        print(zona.strip().lower())  # minúsculas
+        print(len(zona.strip()))     # cuántos caracteres
+        print("East" in zona)        # True
+    - id: 0e31e6cac4324f52978ad1975bf732a4
+      blockGroup: 0e31e6cac4324f52978ad1975bf732a4
+      type: text-cell-h2
+      sortingKey: ak
+      content: 4. Tu primer error
+    - id: 142eb89546c74de58aeecb9dcccb0d49
+      blockGroup: 142eb89546c74de58aeecb9dcccb0d49
+      type: text-cell-p
+      sortingKey: al
+      content: 'Sumar un texto con un número da un TypeError, por ejemplo "Pasajeros: " + 3. En clase
+        escribimos esa celda rota a propósito. Aquí está la corrección, con str() y con una f-string.'
+    - id: b3822256a6a4422591cd5a8bdfcc6b11
+      blockGroup: b3822256a6a4422591cd5a8bdfcc6b11
+      type: code
+      sortingKey: am
+      content: |
+        print("Pasajeros: " + str(3))
+        print(f"Pasajeros: {3}")
+    - id: d54b2aa4670944808f78a43a1956130f
+      blockGroup: d54b2aa4670944808f78a43a1956130f
+      type: text-cell-h2
+      sortingKey: an
+      content: 5. Listas
+    - id: 7b37bff6643141faa73b18c824b8f46e
+      blockGroup: 7b37bff6643141faa73b18c824b8f46e
+      type: text-cell-p
+      sortingKey: ao
+      content: Una lista guarda varios valores en orden. El primer índice es 0, el -1 es el último, y
+        en una rebanada el final no se incluye.
+    - id: ce544996cd254c148d057c49f6e16038
+      blockGroup: ce544996cd254c148d057c49f6e16038
+      type: code
+      sortingKey: ap
+      content: |
+        zonas_ejemplo = [
+            "JFK Airport",
+            "Midtown Center",
+            "LaGuardia Airport",
+            "Upper East Side South",
+            "Times Sq/Theatre District",
+        ]
+
+        print(len(zonas_ejemplo))       # 5
+        print(zonas_ejemplo[0])         # primero, el índice empieza en 0
+        print(zonas_ejemplo[-1])        # último
+        print(zonas_ejemplo[1:3])       # rebanada, el 3 no se incluye
+
+        zonas_ejemplo.append("Penn Station/Madison Sq West")
+        print(len(zonas_ejemplo))       # 6
+        print("JFK Airport" in zonas_ejemplo)
+
+        # sorted() no cambia la lista original, devuelve una nueva
+        print(sorted(zonas_ejemplo))
+        print(zonas_ejemplo)
+    - id: a324e701e4fe43b6a788c99a39d04b13
+      blockGroup: a324e701e4fe43b6a788c99a39d04b13
+      type: code
+      sortingKey: aq
+      content: |
+        # Una lista real: los primeros 10 códigos de pago del dataset
+        muestra_pagos = viajes["payment_type"].head(10).to_list()
+        print(muestra_pagos)
+        print(type(muestra_pagos))
+    - id: 0fd509b4ca264981911f47bec3133282
+      blockGroup: 0fd509b4ca264981911f47bec3133282
+      type: text-cell-h2
+      sortingKey: ar
+      content: 6. Diccionarios
+    - id: 17744d2bb244430b83f4a417c3969097
+      blockGroup: 17744d2bb244430b83f4a417c3969097
+      type: text-cell-p
+      sortingKey: as
+      content: Un diccionario guarda parejas de llave y valor, como un directorio telefónico. Con corchetes,
+        una llave que no existe da KeyError. Con .get() puedes dar un valor por defecto y no falla.
+    - id: cd3e9d2666f14a30ac2885c1412fc090
+      blockGroup: cd3e9d2666f14a30ac2885c1412fc090
+      type: code
+      sortingKey: at
+      content: |
+        # Los códigos de payment_type del diccionario de datos de la TLC
+        tipos_pago = {
+            0: "Flex Fare",
+            1: "Tarjeta de crédito",
+            2: "Efectivo",
+            3: "Sin cargo",
+            4: "Disputa",
+            5: "Desconocido",
+            6: "Viaje anulado",
+        }
+
+        print(tipos_pago[2])                  # Efectivo
+        print(tipos_pago.get(2))              # Efectivo
+        print(tipos_pago.get(9, "Otro"))      # Otro, no falla aunque la llave no exista
+
+        tipos_pago[7] = "Código nuevo"        # agregar o cambiar una pareja
+        print(len(tipos_pago))
+        del tipos_pago[7]                     # quitar una pareja
+
+        for codigo, nombre in tipos_pago.items():
+            print(codigo, "->", nombre)
+    - id: 98dbb6bd5de642d88b485213209c03ea
+      blockGroup: 98dbb6bd5de642d88b485213209c03ea
+      type: code
+      sortingKey: au
+      content: |
+        # Traducir códigos reales con el diccionario
+        muestra_pagos = viajes["payment_type"].head(10).to_list()
+        traducidos = []
+        for codigo in muestra_pagos:
+            traducidos.append(tipos_pago.get(codigo, "Otro"))
+        print(traducidos)
+    - id: 5689337e989b4bddae6cbca2d9b3d873
+      blockGroup: 5689337e989b4bddae6cbca2d9b3d873
+      type: text-cell-h2
+      sortingKey: av
+      content: 7. Condicionales
+    - id: af7bc89275954c36af5be954bea31099
+      blockGroup: af7bc89275954c36af5be954bea31099
+      type: text-cell-p
+      sortingKey: aw
+      content: if, elif y else deciden qué código corre. Los dos puntos al final de la línea y la indentación
+        (4 espacios) son parte de la sintaxis.
+    - id: 8ffb46641f664dc9b0d32ef545e16fbe
+      blockGroup: 8ffb46641f664dc9b0d32ef545e16fbe
+      type: code
+      sortingKey: ax
+      content: |
+        distancia = 3.4
+
+        if distancia < 1:
+            categoria = "corto"
+        elif distancia <= 5:
+            categoria = "mediano"
+        else:
+            categoria = "largo"
+
+        print(f"Un viaje de {distancia} millas es {categoria}")
+    - id: 9a5ff0bbe62e4799976972c20666029e
+      blockGroup: 9a5ff0bbe62e4799976972c20666029e
+      type: code
+      sortingKey: ay
+      content: |
+        # Dos condiciones a la vez
+        propina = 0
+        total = 25.0
+
+        if total > 0 and propina == 0:
+            print("Viaje con cobro y sin propina")
+        elif total <= 0:
+            print("Revisar el importe, no puede ser cero o negativo")
+        else:
+            print("Viaje con propina")
+    - id: 3bf7393e3eeb46d7add1e3070163e035
+      blockGroup: 3bf7393e3eeb46d7add1e3070163e035
+      type: text-cell-h2
+      sortingKey: az
+      content: 8. Ciclos for
+    - id: 5ceb5e2a98d74267853b7241d18e3eaf
+      blockGroup: 5ceb5e2a98d74267853b7241d18e3eaf
+      type: text-cell-p
+      sortingKey: b0
+      content: for repite un bloque por cada elemento. El patrón del acumulador (empezar en cero y sumar
+        dentro del ciclo) es la base de contar y sumar, que luego SQL y Polars hacen con una sola instrucción.
+    - id: cb21ad4a429a4ea4b915216d230301a0
+      blockGroup: cb21ad4a429a4ea4b915216d230301a0
+      type: code
+      sortingKey: b1
+      content: |
+        # Recorrer una lista
+        for z in zonas_ejemplo:
+            print(z)
+    - id: da31f3e6373a4685b01cd8189323f921
+      blockGroup: da31f3e6373a4685b01cd8189323f921
+      type: code
+      sortingKey: b2
+      content: |
+        # Contar cuántas zonas dicen "Airport" (patrón del acumulador)
+        contador = 0
+        for z in zonas_ejemplo:
+            if "Airport" in z:
+                contador += 1
+        print(f"Zonas con Airport: {contador}")
+    - id: 9320277373ab491c99dedab9f62d0087
+      blockGroup: 9320277373ab491c99dedab9f62d0087
+      type: code
+      sortingKey: b3
+      content: |
+        # range y enumerate
+        for i in range(3):
+            print("vuelta", i)
+
+        for posicion, z in enumerate(zonas_ejemplo):
+            print(posicion, z)
+    - id: 4acfb2a11bd745cb87bb41d915fb9a70
+      blockGroup: 4acfb2a11bd745cb87bb41d915fb9a70
+      type: code
+      sortingKey: b4
+      content: |
+        # Acumular sobre una muestra real: suma de distancias y cuántos viajes largos
+        distancias = viajes["trip_distance"].head(10).to_list()
+        suma = 0.0
+        largos = 0
+        for d in distancias:
+            suma += d
+            if d > 5:
+                largos += 1
+
+        print(f"Suma de 10 distancias: {suma:.2f}")
+        print(f"Promedio: {suma / len(distancias):.2f}")
+        print(f"Viajes largos en la muestra: {largos}")
+
+        # El mismo cálculo con una comprensión de listas (atajo opcional)
+        largos_2 = len([d for d in distancias if d > 5])
+        print(largos_2 == largos)
+    - id: 5ce8d57166184242a3495e6f7830f5b8
+      blockGroup: 5ce8d57166184242a3495e6f7830f5b8
+      type: text-cell-h2
+      sortingKey: b5
+      content: 9. Funciones
+    - id: 6f59779e1c5b4f3ab97af7316ab2190e
+      blockGroup: 6f59779e1c5b4f3ab97af7316ab2190e
+      type: text-cell-p
+      sortingKey: b6
+      content: 'Una función es un bloque con nombre que se reutiliza. Los parámetros entran y return entrega
+        el resultado. print solo muestra el valor: si no hay return, la función devuelve None.'
+    - id: 6337b6e283944c209a9ed630ae8d8957
+      blockGroup: 6337b6e283944c209a9ed630ae8d8957
+      type: code
+      sortingKey: b7
+      content: |
+        def clasificar_viaje(millas):
+            """Devuelve 'corto', 'mediano' o 'largo' según la distancia."""
+            if millas < 1:
+                return "corto"
+            elif millas <= 5:
+                return "mediano"
+            else:
+                return "largo"
+
+
+        print(clasificar_viaje(0.5))
+        print(clasificar_viaje(3.4))
+        print(clasificar_viaje(12))
+    - id: f2823280fede4302ac2867993b6a8fa7
+      blockGroup: f2823280fede4302ac2867993b6a8fa7
+      type: code
+      sortingKey: b8
+      content: |
+        # print muestra, return entrega
+        def doble_con_print(n):
+            print(n * 2)
+
+
+        def doble_con_return(n):
+            return n * 2
+
+
+        a = doble_con_print(4)     # imprime 8 pero a queda en None
+        b = doble_con_return(4)    # b vale 8
+        print(a, b)
+    - id: 703710ad8ad54d43a3a86c7de578bb2d
+      blockGroup: 703710ad8ad54d43a3a86c7de578bb2d
+      type: code
+      sortingKey: b9
+      content: |
+        # Parámetros con valor por defecto, y usar el diccionario dentro de una función
+        def etiqueta_pago(codigo, por_defecto="Desconocido"):
+            return tipos_pago.get(codigo, por_defecto)
+
+
+        print(etiqueta_pago(1))
+        print(etiqueta_pago(2))
+        print(etiqueta_pago(99))
+        print(etiqueta_pago(99, "Otro"))
+
+
+        def porcentaje_propina(propina, total):
+            if total <= 0:
+                return 0.0
+            return round(propina / total * 100, 1)
+
+
+        print(porcentaje_propina(5, 20))
+        print(porcentaje_propina(5, 0))
+    - id: 51b87a79753f4d00ac59b22589555eef
+      blockGroup: 51b87a79753f4d00ac59b22589555eef
+      type: text-cell-h2
+      sortingKey: ba
+      content: 10. Módulos
+    - id: 5a4ba3f1396648e587e135855b2eff66
+      blockGroup: 5a4ba3f1396648e587e135855b2eff66
+      type: text-cell-p
+      sortingKey: bb
+      content: 'Un módulo es un archivo de Python con funciones listas para usar y se trae con import.
+        Las librerías como Polars se importan igual. Compara el promedio hecho a mano con el de Polars:
+        mismo resultado, menos código.'
+    - id: 498ddb0c94014b04813fc96d25eb97e8
+      blockGroup: 498ddb0c94014b04813fc96d25eb97e8
+      type: code
+      sortingKey: bc
+      content: |
+        import math
+        import statistics
+        from pathlib import Path
+
+        print(math.sqrt(16))
+        print(math.ceil(3.2))
+
+        distancias = viajes["trip_distance"].head(100).to_list()
+        print(round(statistics.mean(distancias), 2))
+        print(round(statistics.median(distancias), 2))
+
+        # La misma media en una línea con Polars
+        print(round(viajes["trip_distance"].head(100).mean(), 2))
+
+        # pathlib: preguntar si un archivo existe
+        print(Path("datos/viajes_2024_01.parquet").exists())
+    - id: f83f3e16ff70418888daff1e3577f67c
+      blockGroup: f83f3e16ff70418888daff1e3577f67c
+      type: text-cell-h2
+      sortingKey: bd
+      content: 11. Cómo leer un traceback
+    - id: 0b548e99066a48feafe6e1bdaf5a9504
+      blockGroup: 0b548e99066a48feafe6e1bdaf5a9504
+      type: text-cell-p
+      sortingKey: be
+      content: 'Cuando algo falla, Python imprime un traceback. Se lee de abajo hacia arriba: la última
+        línea dice qué pasó (el tipo de error y el mensaje) y las de arriba dicen dónde. En clase escribimos
+        una función que falla con ZeroDivisionError al promediar una lista vacía. Esta es la versión corregida.'
+    - id: 8a8d0303262048538f8cfaadc8fa4988
+      blockGroup: 8a8d0303262048538f8cfaadc8fa4988
+      type: code
+      sortingKey: bf
+      content: |
+        def promedio(valores):
+            if len(valores) == 0:
+                return 0.0
+            return sum(valores) / len(valores)
+
+
+        def resumen(valores):
+            return f"Promedio: {promedio(valores)}"
+
+
+        print(resumen([]))
+    - id: 9f7255321aed49d79f5c1dc9db97143a
+      blockGroup: 9f7255321aed49d79f5c1dc9db97143a
+      type: text-cell-h2
+      sortingKey: bg
+      content: '12. Tu turno: los 5 ejercicios'
+    - id: 157d231d89ae4806b0d97ad02037af1f
+      blockGroup: 157d231d89ae4806b0d97ad02037af1f
+      type: text-cell-p
+      sortingKey: bh
+      content: Reemplaza los puntos suspensivos por tu respuesta en cada celda. La verificación del final
+        te dice qué falta.
+    - id: f33dd1c9cf114a75b82a0fff574aaf68
+      blockGroup: f33dd1c9cf114a75b82a0fff574aaf68
+      type: text-cell-h3
+      sortingKey: bi
+      content: 'Ejercicio 1: costo por milla'
+    - id: 6df4fd419b9044589d0f7e02bdf1132a
+      blockGroup: 6df4fd419b9044589d0f7e02bdf1132a
+      type: text-cell-p
+      sortingKey: bj
+      content: Un viaje costó 25.5 dólares y recorrió 3.0 millas. Guarda en costo_por_milla cuánto costó
+        cada milla.
+    - id: 2471c8fabab2448b8ad9012f99fe0a7c
+      blockGroup: 2471c8fabab2448b8ad9012f99fe0a7c
+      type: code
+      sortingKey: bk
+      content: |
+        total_viaje = 25.5
+        distancia_millas = 3.0
+        # Pista: divide el total entre la distancia
+        costo_por_milla = ...
+
+        print(costo_por_milla)
+    - id: 254f76c9d7734435917dfcc557e91cdd
+      blockGroup: 254f76c9d7734435917dfcc557e91cdd
+      type: text-cell-h3
+      sortingKey: bl
+      content: 'Ejercicio 2: zonas de aeropuerto'
+    - id: a94f991c9b9b43a285b3a71995680e67
+      blockGroup: a94f991c9b9b43a285b3a71995680e67
+      type: text-cell-p
+      sortingKey: bm
+      content: De la lista zonas_ejemplo (ya existe en el notebook), cuenta cuántas zonas tienen la palabra
+        Airport y guarda el número en n_aeropuertos.
+    - id: 98c0867ff92a45b99bf5eedd62fc6c73
+      blockGroup: 98c0867ff92a45b99bf5eedd62fc6c73
+      type: code
+      sortingKey: bn
+      content: |
+        # Pista: recorre la lista con for y usa un acumulador, o una comprensión de listas
+        n_aeropuertos = ...
+
+        print(n_aeropuertos)
+    - id: 8462a1e95a9c470ba4a7ca950bbff472
+      blockGroup: 8462a1e95a9c470ba4a7ca950bbff472
+      type: text-cell-h3
+      sortingKey: bo
+      content: 'Ejercicio 3: etiqueta de pago'
+    - id: 13002a41573e41c280951a048c442377
+      blockGroup: 13002a41573e41c280951a048c442377
+      type: text-cell-p
+      sortingKey: bp
+      content: Escribe la función etiqueta_pago(codigo) que reciba un código de payment_type y devuelva
+        su nombre usando el diccionario tipos_pago. Si el código no existe debe devolver Desconocido.
+    - id: de0b8c51870e4710b03314e6f2d4f9f6
+      blockGroup: de0b8c51870e4710b03314e6f2d4f9f6
+      type: code
+      sortingKey: bq
+      content: |
+        # Pista: usa tipos_pago.get con un valor por defecto, y return
+        def etiqueta_pago(codigo):
+            ...
+
+
+        print(etiqueta_pago(1))
+        print(etiqueta_pago(2))
+        print(etiqueta_pago(99))
+    - id: ef7303032962443c9737375473c05a29
+      blockGroup: ef7303032962443c9737375473c05a29
+      type: text-cell-h3
+      sortingKey: br
+      content: 'Ejercicio 4: clasificar un viaje'
+    - id: d38f2e222e10426294d87a3c059dd92d
+      blockGroup: d38f2e222e10426294d87a3c059dd92d
+      type: text-cell-p
+      sortingKey: bs
+      content: Escribe la función clasificar_viaje(millas) que devuelva corto si la distancia es menor
+        a 1, mediano si está entre 1 y 5 (incluyendo el 1 y el 5) y largo si es mayor a 5.
+    - id: fa91feda7f074162bd8bafb317e503b5
+      blockGroup: fa91feda7f074162bd8bafb317e503b5
+      type: code
+      sortingKey: bt
+      content: |
+        # Pista: if, elif, else y tres return. Cuidado con el borde: 5 es mediano
+        def clasificar_viaje(millas):
+            ...
+
+
+        print(clasificar_viaje(0.5), clasificar_viaje(1), clasificar_viaje(5), clasificar_viaje(5.1))
+    - id: 7c177696f1f04a4ba7e212b23487b8a5
+      blockGroup: 7c177696f1f04a4ba7e212b23487b8a5
+      type: text-cell-h3
+      sortingKey: bu
+      content: 'Ejercicio 5: viajes largos en una muestra real'
+    - id: dcc9bd493e444ac5b2607190b486c34a
+      blockGroup: dcc9bd493e444ac5b2607190b486c34a
+      type: text-cell-p
+      sortingKey: bv
+      content: Toma las primeras 100 distancias del dataset en la variable muestra. Con un ciclo y la
+        función clasificar_viaje, cuenta cuántas son largo y guarda el número en n_largos.
+    - id: 2b4e128acc9b4599baca56225feeb692
+      blockGroup: 2b4e128acc9b4599baca56225feeb692
+      type: code
+      sortingKey: bw
+      content: |
+        muestra = viajes["trip_distance"].head(100).to_list()
+        # Pista: acumulador, y dentro del ciclo llama a la función del ejercicio 4
+        n_largos = ...
+
+        print(n_largos)
+    - id: 3253e8ee2711495bae85c8381f578aa5
+      blockGroup: 3253e8ee2711495bae85c8381f578aa5
+      type: text-cell-h2
+      sortingKey: bx
+      content: Verificación
+    - id: 37bc66f33aac40a99f57a0c3c5b3d5fa
+      blockGroup: 37bc66f33aac40a99f57a0c3c5b3d5fa
+      type: text-cell-p
+      sortingKey: by
+      content: Ejecuta esta celda para revisar tu trabajo. Si algo falla, el mensaje te dice qué corregir.
+        Esta celda no se modifica. Después de reparar el taller de errores, vuelve a ejecutarla al final
+        del notebook.
+    - id: e953e601f22342d6b3e50be3b8d215ac
+      blockGroup: e953e601f22342d6b3e50be3b8d215ac
+      type: code
+      sortingKey: bz
+      content: |
+        def verificar_sesion_02():
+            g = globals()
+            pendientes = []
+
+            def definido(nombre):
+                return nombre in g and g[nombre] is not Ellipsis
+
+            def igual(a, b):
+                try:
+                    return abs(a - b) < 1e-9
+                except Exception:
+                    return False
+
+            # Datos de la sesión
+            if not definido("viajes") or not definido("zonas"):
+                pendientes.append("Falta cargar los datos: ejecuta la sección 0.")
+            else:
+                if g["viajes"].height != 2_964_624 or g["viajes"].width != 19:
+                    pendientes.append("viajes no tiene el tamaño esperado (2,964,624 filas y 19 columnas).")
+                if g["zonas"].height != 265:
+                    pendientes.append("zonas no tiene las 265 zonas esperadas.")
+
+            # Ejercicio 1
+            if not definido("costo_por_milla"):
+                pendientes.append("Ejercicio 1: falta costo_por_milla.")
+            elif not igual(g["costo_por_milla"], 8.5):
+                pendientes.append("Ejercicio 1: costo_por_milla debe ser 25.5 dividido entre 3.0.")
+
+            # Ejercicio 2
+            if not definido("n_aeropuertos") or not definido("zonas_ejemplo"):
+                pendientes.append("Ejercicio 2: falta n_aeropuertos.")
+            else:
+                esperado = sum(1 for z in g["zonas_ejemplo"] if "Airport" in z)
+                if g["n_aeropuertos"] != esperado:
+                    pendientes.append("Ejercicio 2: n_aeropuertos no coincide con las zonas que dicen Airport.")
+
+            # Ejercicio 3
+            if not definido("etiqueta_pago") or not callable(g["etiqueta_pago"]):
+                pendientes.append("Ejercicio 3: falta la función etiqueta_pago.")
+            else:
+                try:
+                    f = g["etiqueta_pago"]
+                    if (f(1), f(2), f(99)) != ("Tarjeta de crédito", "Efectivo", "Desconocido"):
+                        pendientes.append("Ejercicio 3: etiqueta_pago devuelve valores incorrectos.")
+                except Exception as e:
+                    pendientes.append(f"Ejercicio 3: etiqueta_pago falla con {type(e).__name__}.")
+
+            # Ejercicio 4
+            if not definido("clasificar_viaje") or not callable(g["clasificar_viaje"]):
+                pendientes.append("Ejercicio 4: falta la función clasificar_viaje.")
+            else:
+                try:
+                    c = g["clasificar_viaje"]
+                    if (c(0.5), c(1), c(5), c(5.1)) != ("corto", "mediano", "mediano", "largo"):
+                        pendientes.append("Ejercicio 4: clasificar_viaje no respeta los límites (1 y 5 son medianos).")
+                except Exception as e:
+                    pendientes.append(f"Ejercicio 4: clasificar_viaje falla con {type(e).__name__}.")
+
+            # Ejercicio 5
+            if not definido("n_largos"):
+                pendientes.append("Ejercicio 5: falta n_largos.")
+            elif not definido("viajes"):
+                pendientes.append("Ejercicio 5: falta cargar viajes.")
+            else:
+                ref = g["viajes"]["trip_distance"].head(100).to_list()
+                if g["n_largos"] != sum(1 for d in ref if d > 5):
+                    pendientes.append("Ejercicio 5: n_largos no coincide con las distancias mayores a 5 de las primeras 100.")
+
+            # Taller de errores
+            esperados = {
+                "resultado_1": 7.77,
+                "resultado_2": "Pasajeros en el viaje: 3",
+                "resultado_3": "Otro",
+                "resultado_4": "Times Sq/Theatre District",
+                "resultado_5": True,
+            }
+            for nombre, valor in esperados.items():
+                n = nombre[-1]
+                if not definido(nombre):
+                    pendientes.append(f"Taller, celda {n}: sigue rota o no tiene {nombre}.")
+                elif g[nombre] != valor or type(g[nombre]) is not type(valor):
+                    pendientes.append(f"Taller, celda {n}: {nombre} no tiene el valor esperado.")
+
+            if pendientes:
+                for p in pendientes:
+                    print("Pendiente:", p)
+            else:
+                print("Sesión 2 completa. Nos vemos en la siguiente.")
+
+
+        verificar_sesion_02()
+    - id: 5aeb53317f6045e398b6795db18a151b
+      blockGroup: 5aeb53317f6045e398b6795db18a151b
+      type: text-cell-h2
+      sortingKey: c0
+      content: 13. Taller de errores
+    - id: 5d932a6799e146d1aa6cdbd49293e760
+      blockGroup: 5d932a6799e146d1aa6cdbd49293e760
+      type: text-cell-callout
+      sortingKey: c1
+      content: Cada celda de abajo está rota a propósito. Lee la última línea del error, ubica la línea
+        y arréglala. Deja el resultado en la variable que dice cada celda. Run all se detiene en la primera
+        celda rota, así que repáralas una por una con Shift + Enter.
+      metadata:
+        color: yellow
+    - id: 6875a788643743088c50ac90770a9dc1
+      blockGroup: 6875a788643743088c50ac90770a9dc1
+      type: code
+      sortingKey: c2
+      content: |
+        # Celda rota 1
+        # ESTA CELDA ESTÁ ROTA A PROPÓSITO. Arréglala. Debe dejar en resultado_1 las millas redondeadas a 2 decimales.
+        distancia_km = 12.5
+        distancia_millas = distancia_kms * 0.621371
+        resultado_1 = round(distancia_millas, 2)
+    - id: 54c6384ddcad47acb75a0d57cdd45995
+      blockGroup: 54c6384ddcad47acb75a0d57cdd45995
+      type: code
+      sortingKey: c3
+      content: |
+        # Celda rota 2
+        # ESTA CELDA ESTÁ ROTA A PROPÓSITO. Arréglala. Debe dejar en resultado_2 el texto "Pasajeros en el viaje: 3".
+        pasajeros = 3
+        mensaje = "Pasajeros en el viaje: " + pasajeros
+        resultado_2 = mensaje
+    - id: c94e8e94c16f45fca864816f71176068
+      blockGroup: c94e8e94c16f45fca864816f71176068
+      type: code
+      sortingKey: c4
+      content: |
+        # Celda rota 3
+        # ESTA CELDA ESTÁ ROTA A PROPÓSITO. Arréglala. Si el código no existe debe quedar "Otro" en resultado_3.
+        pagos_corto = {1: "Tarjeta", 2: "Efectivo", 3: "Sin cargo"}
+        codigo = 4
+        resultado_3 = pagos_corto[codigo]
+    - id: c613ea45571848c89ad15b8c204ee99c
+      blockGroup: c613ea45571848c89ad15b8c204ee99c
+      type: code
+      sortingKey: c5
+      content: |
+        # Celda rota 4
+        # ESTA CELDA ESTÁ ROTA A PROPÓSITO. Arréglala. Debe dejar en resultado_4 la última zona de la lista.
+        zonas_taller = [
+            "JFK Airport",
+            "Midtown Center",
+            "Upper East Side South",
+            "LaGuardia Airport",
+            "Times Sq/Theatre District",
+        ]
+        resultado_4 = zonas_taller[5]
+    - id: e44b10d9e396492a9c00e116e4a685ab
+      blockGroup: e44b10d9e396492a9c00e116e4a685ab
+      type: code
+      sortingKey: c6
+      content: |
+        # Celda rota 5
+        # ESTA CELDA ESTÁ ROTA A PROPÓSITO. Arréglala. resultado_5 debe ser True.
+        def es_propina_alta(propina, total)
+            return propina / total > 0.2
+
+        resultado_5 = es_propina_alta(5, 20)
+    - id: 5d2d2aa77fcf4435bfa8fe0bf81761bd
+      blockGroup: 5d2d2aa77fcf4435bfa8fe0bf81761bd
+      type: text-cell-h2
+      sortingKey: c7
+      content: Verificación final del taller
+    - id: 40cf36ff4d7e4ba599b5e3a4e1223b54
+      blockGroup: 40cf36ff4d7e4ba599b5e3a4e1223b54
+      type: text-cell-p
+      sortingKey: c8
+      content: Cuando hayas reparado las 5 celdas, ejecuta esta celda otra vez para ver si la sesión quedó
+        completa.
+    - id: e3c62f322af04334a44a9683ee2eae4b
+      blockGroup: e3c62f322af04334a44a9683ee2eae4b
+      type: code
+      sortingKey: c9
+      content: |
+        verificar_sesion_02()
+  settings:
+    requirements:
+    - polars==1.43.2
+    - duckdb
+    - pandera
+    - plotly
+    - pyarrow
+environment:
+  python:
+    environment: uv
+    version: '3.13'

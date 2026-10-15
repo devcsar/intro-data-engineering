@@ -72,6 +72,24 @@ class Notebook:
     def markdown(self, t): return self._add("markdown", t)
     def code(self, t): return self._add("code", t)
 
+    def instalar(self, titulo="Preparar el entorno"):
+        """Celda que instala las librerías del curso con uv.
+
+        Deepnote no instala solo el requirements.txt del proyecto y la máquina no trae uv,
+        así que se instala uv con pip y luego se usa contra el Python del notebook.
+        """
+        self.h2(titulo)
+        self.p(
+            "Esta celda instala las librerías del curso con uv, un instalador de Python muy rápido. "
+            "Lee la lista del archivo requirements.txt del proyecto. Se ejecuta en segundos y es seguro "
+            "volver a correrla."
+        )
+        return self.code(
+            "import sys\n\n"
+            "!pip install -q uv\n"
+            "!uv pip install -q --python {sys.executable} -r requirements.txt\n"
+        )
+
     def sql(self, consulta, variable, integracion="deepnote-dataframe-sql"):
         return self._add(
             "sql",
