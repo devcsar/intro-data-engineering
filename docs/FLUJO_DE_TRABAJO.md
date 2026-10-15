@@ -34,7 +34,21 @@ set -a && . ./.env && set +a
 deepnote sync <directorio_vacio> --dry-run --all-files
 ```
 
-  Sync espeja el workspace completo, un directorio por proyecto con un `.deepnote` por notebook. No crea ni borra proyectos. El push real todavía no se ha probado.
+  Sync espeja el workspace completo, un directorio por proyecto con un `.deepnote` por notebook. No crea ni borra proyectos.
+
+- **Push real probado.** Para arreglar `sql_integration_id` (que el MCP no puede fijar) se hizo un pull a un directorio vacío fuera del repo, se editó el `.deepnote` bajado y se empujó:
+
+```bash
+set -a && . ./.env && set +a
+deepnote sync <directorio_vacio>                      # pull
+# editar <directorio_vacio>/<Proyecto>/<Notebook>.deepnote
+deepnote sync <directorio_vacio> --dry-run --on-conflict skip
+deepnote sync <directorio_vacio> --on-conflict skip   # push
+```
+
+  El push sobrescribe el notebook pero conserva los IDs de proyecto, notebook y bloques. Los otros proyectos quedan "unchanged".
+- **Ojo con los runs:** un `create_run` desatendido escribe en el almacenamiento del proyecto (`datos/viajes_2024_01.parquet`, 61 MB, y `datos/zonas.csv`). Esos archivos quedan en el proyecto y se copiarían a los alumnos al duplicar, así que conviene borrarlos antes de repartir.
+- **Instalación de librerías:** ver la sección 0 de `S01.deepnote`. `uv` no viene en la máquina y hay que instalarlo con pip primero.
 
 ## Traer cambios hechos en la nube
 
