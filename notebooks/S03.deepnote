@@ -1,0 +1,806 @@
+version: 1.0.0
+metadata:
+  createdAt: '2026-10-15T00:51:26.000Z'
+project:
+  id: 77185643-071e-49c4-abce-32b2c67c2f1b
+  name: Curso Data Engineering - Impact Click
+  notebooks:
+  - id: 95f48826-a52b-4f50-9eb3-ff23f59bc4fe
+    name: S03 - Fundamentos de datos y formatos
+    executionMode: block
+    isModule: false
+    blocks:
+    - id: d0b9cba7139b4fcebff88bb0442d3de7
+      blockGroup: d0b9cba7139b4fcebff88bb0442d3de7
+      type: text-cell-h1
+      sortingKey: a0
+      content: Sesión 3, Fundamentos de datos y formatos
+    - id: 7086cad57632404eb489c321deae138d
+      blockGroup: 7086cad57632404eb489c321deae138d
+      type: text-cell-callout
+      sortingKey: a1
+      content: Antes de empezar, presiona "Run all" arriba a la derecha. Vas a hacer esto al inicio de
+        cada sesión. La máquina se apaga sola después de 15 minutos sin actividad, y al encenderse otra
+        vez las variables se pierden, aunque tu código y tus archivos siguen ahí. Hoy esta sesión escribe
+        archivos grandes, algunas celdas tardan, no las interrumpas.
+      metadata:
+        color: blue
+    - id: de202231b8c945e1a1cd9c2e54dcd7bd
+      blockGroup: de202231b8c945e1a1cd9c2e54dcd7bd
+      type: text-cell-p
+      sortingKey: a2
+      content: Al terminar esta sesión vas a saber por qué los datos se guardan en formatos distintos,
+        y vas a haber medido con tus propios números cuánto cambia el tamaño y el tiempo de lectura entre
+        CSV, NDJSON y Parquet.
+    - id: 3ea18600a4e1410d9998c6506e3debd3
+      blockGroup: 3ea18600a4e1410d9998c6506e3debd3
+      type: text-cell-h2
+      sortingKey: a3
+      content: Preparar el entorno
+    - id: 03e662545b8740f981b78cb0fa64691c
+      blockGroup: 03e662545b8740f981b78cb0fa64691c
+      type: text-cell-p
+      sortingKey: a4
+      content: Esta celda instala las librerías del curso con uv, un instalador de Python muy rápido.
+        Lee la lista del archivo requirements.txt del proyecto. Se ejecuta en segundos y es seguro volver
+        a correrla.
+    - id: e96b33c659a1408e95b7ed20af164aaa
+      blockGroup: e96b33c659a1408e95b7ed20af164aaa
+      type: code
+      sortingKey: a5
+      content: |
+        import sys
+
+        !pip install -q uv
+        !uv pip install -q --python {sys.executable} -r requirements.txt
+    - id: f9ceb0e9bd1a49248f91ee2c38cf604b
+      blockGroup: f9ceb0e9bd1a49248f91ee2c38cf604b
+      type: text-cell-h2
+      sortingKey: a6
+      content: 1. Cargar los datos
+    - id: 652e7ddd0134421aac7f3766d9257ce6
+      blockGroup: 652e7ddd0134421aac7f3766d9257ce6
+      type: text-cell-p
+      sortingKey: a7
+      content: Cargamos los viajes y las zonas. Si ya están guardados en la carpeta datos se leen del
+        disco, y si no, se descargan. También definimos las rutas de los archivos que vamos a escribir
+        hoy.
+    - id: d8c1278bdac14eef93bbb87a9cdbfd3b
+      blockGroup: d8c1278bdac14eef93bbb87a9cdbfd3b
+      type: code
+      sortingKey: a8
+      content: |
+        import io
+        import time
+        from pathlib import Path
+
+        import polars as pl
+
+        URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+        CARPETA = Path("datos")
+        CARPETA.mkdir(exist_ok=True)
+        RUTA_PARQUET = CARPETA / "viajes_2024_01.parquet"
+        RUTA_ZONAS = CARPETA / "zonas.csv"
+        RUTA_CSV = CARPETA / "viajes_2024_01.csv"
+        RUTA_NDJSON = CARPETA / "viajes_2024_01.ndjson"
+
+        # Si ya están guardados de la sesión 1, se leen del disco. Si no, se descargan.
+        if RUTA_PARQUET.exists():
+            viajes = pl.read_parquet(RUTA_PARQUET)
+        else:
+            viajes = pl.read_parquet(URL_VIAJES)
+            viajes.write_parquet(RUTA_PARQUET)
+
+        if RUTA_ZONAS.exists():
+            zonas = pl.read_csv(RUTA_ZONAS)
+        else:
+            zonas = pl.read_csv(URL_ZONAS)
+            zonas.write_csv(RUTA_ZONAS)
+
+        print(f"Viajes: {viajes.height:,} filas x {viajes.width} columnas")
+        print(f"Zonas:  {zonas.height:,} filas x {zonas.width} columnas")
+    - id: 036e9c914d864a7ca27e355f2269304c
+      blockGroup: 036e9c914d864a7ca27e355f2269304c
+      type: text-cell-h2
+      sortingKey: a9
+      content: 2. Tipos de datos
+    - id: 4a6e4a51f373476db15d9646ab7f6bc8
+      blockGroup: 4a6e4a51f373476db15d9646ab7f6bc8
+      type: text-cell-p
+      sortingKey: aa
+      content: 'Estructurado: filas y columnas fijas, como la tabla de viajes. Semiestructurado: tiene
+        estructura flexible, como un JSON donde cada registro puede traer campos distintos. No estructurado:
+        sin forma de tabla, como una foto, un PDF o un texto libre.'
+    - id: 9149b45c10c04ac48ecab20b1b39eac3
+      blockGroup: 9149b45c10c04ac48ecab20b1b39eac3
+      type: code
+      sortingKey: ab
+      content: |
+        # Estructurado: una tabla con columnas fijas
+        viajes.head(3)
+    - id: d81ec98411be47f7be7762b257e6df2c
+      blockGroup: d81ec98411be47f7be7762b257e6df2c
+      type: code
+      sortingKey: ac
+      content: |
+        # Semiestructurado: un evento de una app, cada registro puede traer campos distintos
+        eventos_json = """
+        [
+          {"viaje": 1, "zona": "JFK Airport", "pago": {"tipo": 1, "importe": 52.5}, "tags": ["aeropuerto"]},
+          {"viaje": 2, "zona": "Midtown Center", "pago": {"tipo": 2, "importe": 14.0}},
+          {"viaje": 3, "zona": "LaGuardia Airport", "pago": {"tipo": 1, "importe": 33.2}, "tags": ["aeropuerto", "equipaje"]}
+        ]
+        """
+        eventos = pl.read_json(io.StringIO(eventos_json))
+        print(eventos.schema)
+        eventos
+    - id: f1fe219a138c44e5af1293482c4ffdba
+      blockGroup: f1fe219a138c44e5af1293482c4ffdba
+      type: code
+      sortingKey: ad
+      content: |
+        # El campo anidado "pago" es una estructura. unnest lo aplana en columnas normales
+        eventos.unnest("pago")
+    - id: 3e0b4d87d0a948e3b78b110a68c6e38b
+      blockGroup: 3e0b4d87d0a948e3b78b110a68c6e38b
+      type: code
+      sortingKey: ae
+      content: |
+        # No estructurado: texto libre. Hay que extraer estructura antes de analizarlo
+        resena = "El conductor fue amable, pero el viaje al aeropuerto tardó mucho por el tráfico."
+        palabras = resena.lower().replace(",", "").replace(".", "").split()
+        print(len(palabras), "palabras")
+        print("aeropuerto" in palabras)
+    - id: cfc95a5cfbf44c00b355918ef10376a8
+      blockGroup: cfc95a5cfbf44c00b355918ef10376a8
+      type: text-cell-h2
+      sortingKey: af
+      content: 3. Esquema y tipado
+    - id: 0e40cfa1a0714e82989e0552095cec11
+      blockGroup: 0e40cfa1a0714e82989e0552095cec11
+      type: text-cell-p
+      sortingKey: ag
+      content: 'El esquema es la ficha de la tabla: el nombre y el tipo de cada columna. El tipo define
+        qué se puede hacer: puedes restar dos fechas, pero no dos textos.'
+    - id: 96286d4f023047ad8946566e3698be7d
+      blockGroup: 96286d4f023047ad8946566e3698be7d
+      type: code
+      sortingKey: ah
+      content: |
+        # El esquema: nombre y tipo de cada columna
+        for columna, tipo in viajes.schema.items():
+            print(f"{columna:<25} {tipo}")
+    - id: f0131b74403c482180e60672167e0985
+      blockGroup: f0131b74403c482180e60672167e0985
+      type: code
+      sortingKey: ai
+      content: |
+        # Los tipos definen qué se puede hacer
+        print(viajes["tpep_pickup_datetime"].dtype)
+
+        # Restar dos fechas funciona porque son fechas, no texto
+        duracion = (viajes["tpep_dropoff_datetime"] - viajes["tpep_pickup_datetime"]).head(3)
+        print(duracion)
+
+        # Con texto, la misma resta no tiene sentido
+        try:
+            "2024-01-01 10:00" - "2024-01-01 09:30"
+        except TypeError as error:
+            print("TypeError:", error)
+    - id: 56c13111840d4628b64f6fdadcaf8f91
+      blockGroup: 56c13111840d4628b64f6fdadcaf8f91
+      type: text-cell-h2
+      sortingKey: aj
+      content: 4. CSV a fondo
+    - id: 43834b63048547f2819d6387c06507e9
+      blockGroup: 43834b63048547f2819d6387c06507e9
+      type: text-cell-p
+      sortingKey: ak
+      content: 'El CSV es el formato más común y el que más problemas da. Tres cosas a revisar siempre:
+        el delimitador, el encabezado y el encoding. Además, el CSV no guarda tipos: quien lo lee los
+        adivina.'
+    - id: b12b8c82fb32441fa470db5d96b73fbc
+      blockGroup: b12b8c82fb32441fa470db5d96b73fbc
+      type: code
+      sortingKey: al
+      content: |
+        # Problema 1: el delimitador. Con coma se lee una sola columna
+        csv_pc = "zona;ciudad;total\nCoyoacán;CDMX;120\nTlalpan;CDMX;85\n"
+
+        mal = pl.read_csv(io.StringIO(csv_pc))
+        print(mal.columns)   # una sola columna llamada "zona;ciudad;total"
+
+        bien = pl.read_csv(io.StringIO(csv_pc), separator=";")
+        print(bien.columns)
+        bien
+    - id: 2cc2b7716c76434784431d62218d319b
+      blockGroup: 2cc2b7716c76434784431d62218d319b
+      type: code
+      sortingKey: am
+      content: |
+        # Problema 2: no hay encabezado
+        csv_sin = "1,Coyoacán\n2,Tlalpan\n"
+
+        mal = pl.read_csv(io.StringIO(csv_sin))
+        print(mal.columns)   # la primera fila se volvió nombres de columna
+
+        bien = pl.read_csv(io.StringIO(csv_sin), has_header=False, new_columns=["id", "zona"])
+        bien
+    - id: 50cf4f3fd80d408e920506115aa39a9d
+      blockGroup: 50cf4f3fd80d408e920506115aa39a9d
+      type: code
+      sortingKey: an
+      content: |
+        # Problema 3: los ceros a la izquierda se pierden porque el CSV no guarda tipos
+        csv_ids = "id,zona\n00123,A\n00456,B\n"
+
+        adivinado = pl.read_csv(io.StringIO(csv_ids))
+        print(adivinado.schema)   # id es Int64, 00123 ahora es 123
+
+        # Opción 1: declarar el tipo de una columna
+        declarado = pl.read_csv(io.StringIO(csv_ids), schema_overrides={"id": pl.String})
+        print(declarado["id"].to_list())
+
+        # Opción 2: leer todo como texto y convertir después
+        todo_texto = pl.read_csv(io.StringIO(csv_ids), infer_schema=False)
+        print(todo_texto.schema)
+    - id: 8e460d594fe949d2a9cd2021c71952b2
+      blockGroup: 8e460d594fe949d2a9cd2021c71952b2
+      type: code
+      sortingKey: ao
+      content: |
+        # Problema 4: coma decimal (formato de otros países)
+        csv_decimal = "zona;tarifa\nA;12,50\nB;3,10\n"
+
+        mal = pl.read_csv(io.StringIO(csv_decimal), separator=";")
+        print(mal.schema)   # tarifa queda como texto
+
+        bien = pl.read_csv(io.StringIO(csv_decimal), separator=";", decimal_comma=True)
+        print(bien.schema)
+    - id: eefd4eb4c55544c5866eb5ddd7500786
+      blockGroup: eefd4eb4c55544c5866eb5ddd7500786
+      type: code
+      sortingKey: ap
+      content: |
+        # Problema 5: encoding. Un archivo guardado en Latin-1 no es UTF-8
+        Path("datos/latin1.csv").write_bytes("zona;ciudad\nÁlvaro Obregón;CDMX\nCoyoacán;CDMX\n".encode("latin-1"))
+
+        try:
+            pl.read_csv("datos/latin1.csv", separator=";")
+        except Exception as error:
+            print("Falla al leer como UTF-8:", type(error).__name__)
+
+        bien = pl.read_csv("datos/latin1.csv", separator=";", encoding="latin1")
+        bien
+    - id: 2a16572855c4494eaea8ba14db5e2957
+      blockGroup: 2a16572855c4494eaea8ba14db5e2957
+      type: text-cell-h2
+      sortingKey: aq
+      content: 5. JSON contra NDJSON
+    - id: c5e1899c38984e22a2b3bf22b3f1fa18
+      blockGroup: c5e1899c38984e22a2b3bf22b3f1fa18
+      type: text-cell-p
+      sortingKey: ar
+      content: JSON es un solo documento, por ejemplo un arreglo entre corchetes. NDJSON tiene un objeto
+        JSON por línea, sin corchetes ni comas entre líneas, y por eso se puede leer línea por línea.
+        Se usa mucho en logs y eventos.
+    - id: 5efe3da920134fbbabdfe317eacc29f2
+      blockGroup: 5efe3da920134fbbabdfe317eacc29f2
+      type: code
+      sortingKey: as
+      content: |
+        # Los mismos tres registros en los dos formatos
+        json_texto = '[{"id": 1, "zona": "JFK"}, {"id": 2, "zona": "LGA"}, {"id": 3, "zona": "EWR"}]'
+        ndjson_texto = '{"id": 1, "zona": "JFK"}\n{"id": 2, "zona": "LGA"}\n{"id": 3, "zona": "EWR"}\n'
+
+        print(json_texto)
+        print()
+        print(ndjson_texto)
+    - id: 73ee5bc73b514e11b82191a3a9b6ead9
+      blockGroup: 73ee5bc73b514e11b82191a3a9b6ead9
+      type: code
+      sortingKey: at
+      content: |
+        tabla_json = pl.read_json(io.StringIO(json_texto))
+        tabla_ndjson = pl.read_ndjson(io.StringIO(ndjson_texto))
+        print(tabla_json.equals(tabla_ndjson))   # mismos datos, distinta forma
+
+        # Una muestra de viajes escrita en los dos formatos
+        muestra = viajes.head(3)
+        print(muestra.write_json())
+        print(muestra.write_ndjson())
+    - id: be777a212c4b4d228ca5fe661f9103ea
+      blockGroup: be777a212c4b4d228ca5fe661f9103ea
+      type: code
+      sortingKey: au
+      content: |
+        # Con NDJSON se puede leer línea por línea, sin cargar todo el archivo
+        for linea in ndjson_texto.splitlines():
+            print(linea)
+    - id: 628df098b240474e8b3bdb1e06c8189d
+      blockGroup: 628df098b240474e8b3bdb1e06c8189d
+      type: text-cell-h2
+      sortingKey: av
+      content: 6. Parquet
+    - id: 01ad183e9c8245d480e0c5b51bf90477
+      blockGroup: 01ad183e9c8245d480e0c5b51bf90477
+      type: text-cell-p
+      sortingKey: aw
+      content: Parquet es columnar, comprimido y trae el esquema guardado dentro del archivo. Por eso
+        al leerlo no hay que adivinar los tipos, y pesa menos que un CSV.
+    - id: 9e5e487a132544b4b726c0d1f7bfd468
+      blockGroup: 9e5e487a132544b4b726c0d1f7bfd468
+      type: code
+      sortingKey: ax
+      content: |
+        # Leer solo el esquema, sin cargar los datos
+        esquema_parquet = pl.read_parquet_schema(RUTA_PARQUET)
+        print(len(esquema_parquet), "columnas")
+        for columna, tipo in esquema_parquet.items():
+            print(f"{columna:<25} {tipo}")
+    - id: 6e53d086ff18467c8bbd4b16a547295b
+      blockGroup: 6e53d086ff18467c8bbd4b16a547295b
+      type: code
+      sortingKey: ay
+      content: |
+        # Compresión: el mismo DataFrame escrito con distintos códecs
+        MB = 1_048_576
+
+        def tamano_mb(ruta):
+            return Path(ruta).stat().st_size / MB
+
+        for codec in ["uncompressed", "snappy", "zstd"]:
+            ruta = CARPETA / f"prueba_{codec}.parquet"
+            viajes.write_parquet(ruta, compression=codec)
+            print(f"{codec:<13} {tamano_mb(ruta):8.1f} MB")
+    - id: f6ec909e95cb4b1a8ff2ff692f32159d
+      blockGroup: f6ec909e95cb4b1a8ff2ff692f32159d
+      type: code
+      sortingKey: az
+      content: |
+        # Opcional: ver cuántos row groups tiene el archivo (necesita pyarrow)
+        try:
+            import pyarrow.parquet as pq
+
+            info = pq.ParquetFile(RUTA_PARQUET)
+            print("Row groups:", info.metadata.num_row_groups)
+            print("Filas:", info.metadata.num_rows)
+        except ModuleNotFoundError:
+            print("pyarrow no está instalado: pip install pyarrow")
+    - id: 2e2caaaafd174d79a772fe06de766028
+      blockGroup: 2e2caaaafd174d79a772fe06de766028
+      type: text-cell-h2
+      sortingKey: b0
+      content: 7. Column pruning, predicate pushdown y Arrow
+    - id: 7bb45307c933443a8514ec5f3bb4db6b
+      blockGroup: 7bb45307c933443a8514ec5f3bb4db6b
+      type: text-cell-p
+      sortingKey: b1
+      content: 'Como Parquet guarda cada columna por separado, se pueden leer solo las columnas que necesitas
+        (column pruning). Y con las estadísticas de cada bloque se pueden saltar bloques completos al
+        filtrar (predicate pushdown). El plan de consulta lo muestra: busca PROJECT y SELECTION.'
+    - id: 29ff55f33a7c4070bd42f68afbf2dcff
+      blockGroup: 29ff55f33a7c4070bd42f68afbf2dcff
+      type: code
+      sortingKey: b2
+      content: |
+        # Medir tiempos de forma repetible
+        def medir(funcion, repeticiones=3):
+            """Ejecuta funcion varias veces y devuelve el mejor tiempo en segundos."""
+            tiempos = []
+            for _ in range(repeticiones):
+                inicio = time.perf_counter()
+                funcion()
+                tiempos.append(time.perf_counter() - inicio)
+            return min(tiempos)
+
+
+        COLUMNAS = ["tpep_pickup_datetime", "PULocationID", "total_amount"]
+
+        t_todo = medir(lambda: pl.read_parquet(RUTA_PARQUET))
+        t_poda = medir(lambda: pl.read_parquet(RUTA_PARQUET, columns=COLUMNAS))
+        print(f"Leer las 19 columnas: {t_todo:.2f} s")
+        print(f"Leer solo 3 columnas: {t_poda:.2f} s")
+    - id: 2604fe2f387846248ccbbedbca111491
+      blockGroup: 2604fe2f387846248ccbbedbca111491
+      type: code
+      sortingKey: b3
+      content: |
+        # El plan de consulta muestra la poda de columnas y el filtro empujado a la lectura
+        plan = (
+            pl.scan_parquet(RUTA_PARQUET)
+            .select(COLUMNAS)
+            .filter(pl.col("total_amount") > 100)
+        )
+        print(plan.explain())
+    - id: 841d1b655ba64345ab701f01f8e42a4e
+      blockGroup: 841d1b655ba64345ab701f01f8e42a4e
+      type: code
+      sortingKey: b4
+      content: |
+        # Apache Arrow: el formato en memoria que comparten las herramientas
+        try:
+            tabla_arrow = viajes.head(1000).to_arrow()
+            print(tabla_arrow.schema.field("PULocationID"))
+            de_vuelta = pl.from_arrow(tabla_arrow)
+            print(de_vuelta.shape)
+        except ModuleNotFoundError:
+            print("Esta demostración necesita pyarrow: pip install pyarrow")
+    - id: 501765fe9b0a42cf93619b296f858422
+      blockGroup: 501765fe9b0a42cf93619b296f858422
+      type: text-cell-h3
+      sortingKey: b5
+      content: Delta Lake e Iceberg, panorama
+    - id: bf6e3884431742869f33c00489de8b3a
+      blockGroup: bf6e3884431742869f33c00489de8b3a
+      type: markdown
+      sortingKey: b6
+      content: |
+        Delta Lake e Iceberg no son formatos de archivo nuevos: son una capa sobre archivos Parquet que agrega un registro de cambios, historial y escrituras seguras. Así se ve una tabla Delta en disco:
+
+        ```text
+        mi_tabla_delta/
+            _delta_log/            registro de cambios (quién escribió qué y cuándo)
+                00000000000000000000.json
+                00000000000000000001.json
+            part-0000.parquet      los datos siguen siendo Parquet
+            part-0001.parquet
+        ```
+    - id: 4aafbbacdc7640f9b4786276402fe656
+      blockGroup: 4aafbbacdc7640f9b4786276402fe656
+      type: text-cell-h2
+      sortingKey: b7
+      content: '8. Práctica: convertir, medir y comparar'
+    - id: d4b60aea3da5410099f820e108b83bf0
+      blockGroup: d4b60aea3da5410099f820e108b83bf0
+      type: text-cell-p
+      sortingKey: b8
+      content: 'Ahora medimos de verdad: guardamos los casi 3 millones de viajes en CSV y en NDJSON y
+        comparamos tamaño en disco y tiempo de lectura contra Parquet. Antes de ejecutar, apuesta: ¿cuál
+        pesa más, CSV o NDJSON? Tus números salen de tu máquina, no hay un resultado único.'
+    - id: d2ba8b1108a541848d8085aad851abaa
+      blockGroup: d2ba8b1108a541848d8085aad851abaa
+      type: text-cell-p
+      sortingKey: b9
+      content: 8.1 Leemos el Parquet y guardamos el esquema original.
+    - id: a346e80c82114b1c8900c06f8cc758a6
+      blockGroup: a346e80c82114b1c8900c06f8cc758a6
+      type: code
+      sortingKey: ba
+      content: |
+        # 8.1 Leer el Parquet y ver el esquema
+        viajes = pl.read_parquet(RUTA_PARQUET)
+        print(f"{viajes.height:,} filas x {viajes.width} columnas")
+        esquema_original = dict(viajes.schema)
+    - id: 83d74bcd50c944cba0128f747deb2f4c
+      blockGroup: 83d74bcd50c944cba0128f747deb2f4c
+      type: text-cell-p
+      sortingKey: bb
+      content: 8.2 Convertimos a CSV y a NDJSON. Esta celda tarda, no la interrumpas.
+    - id: a5656781ae374c2a8353c4dd72c1f400
+      blockGroup: a5656781ae374c2a8353c4dd72c1f400
+      type: code
+      sortingKey: bc
+      content: |
+        # 8.2 Convertir a CSV y a NDJSON (esta celda tarda, no la interrumpas)
+        inicio = time.perf_counter()
+        viajes.write_csv(RUTA_CSV)
+        print(f"CSV escrito en {time.perf_counter() - inicio:.1f} s")
+
+        inicio = time.perf_counter()
+        viajes.write_ndjson(RUTA_NDJSON)
+        print(f"NDJSON escrito en {time.perf_counter() - inicio:.1f} s")
+    - id: 0fa7ac66247642edb870b5512a1b67ce
+      blockGroup: 0fa7ac66247642edb870b5512a1b67ce
+      type: text-cell-p
+      sortingKey: bd
+      content: 8.3 Comparamos el tamaño en disco de los tres archivos.
+    - id: 064c83d514174009b54daa9b6c5e7c2e
+      blockGroup: 064c83d514174009b54daa9b6c5e7c2e
+      type: code
+      sortingKey: be
+      content: |
+        # 8.3 Tamaños en disco
+        for nombre, ruta in [("Parquet", RUTA_PARQUET), ("CSV", RUTA_CSV), ("NDJSON", RUTA_NDJSON)]:
+            print(f"{nombre:<8} {tamano_mb(ruta):10.1f} MB")
+    - id: de492a80a7df4ce2863516693820f8c5
+      blockGroup: de492a80a7df4ce2863516693820f8c5
+      type: text-cell-p
+      sortingKey: bf
+      content: 8.4 Medimos el tiempo de lectura. CSV y NDJSON se miden una sola vez porque tardan.
+    - id: ad0a6f7b57e541b3b7b334d6779cdc77
+      blockGroup: ad0a6f7b57e541b3b7b334d6779cdc77
+      type: code
+      sortingKey: bg
+      content: |
+        # 8.4 Tiempos de lectura (una repetición para CSV y NDJSON porque tardan, tres para Parquet)
+        t_parquet = medir(lambda: pl.read_parquet(RUTA_PARQUET), repeticiones=3)
+        t_csv = medir(lambda: pl.read_csv(RUTA_CSV), repeticiones=1)
+        t_ndjson = medir(lambda: pl.read_ndjson(RUTA_NDJSON), repeticiones=1)
+
+        print(f"Parquet {t_parquet:6.2f} s")
+        print(f"CSV     {t_csv:6.2f} s")
+        print(f"NDJSON  {t_ndjson:6.2f} s")
+    - id: 7b580c2e72c442fba58a3a0e14cb71b3
+      blockGroup: 7b580c2e72c442fba58a3a0e14cb71b3
+      type: text-cell-p
+      sortingKey: bh
+      content: '8.5 El CSV no guarda tipos: vemos qué columnas cambian al leerlo de vuelta.'
+    - id: f22920e3f32446e49f100419bbac8a12
+      blockGroup: f22920e3f32446e49f100419bbac8a12
+      type: code
+      sortingKey: bi
+      content: |
+        # 8.5 El CSV no guarda tipos: qué cambia al leerlo de vuelta
+        desde_csv = pl.read_csv(RUTA_CSV)
+
+        for columna, tipo in esquema_original.items():
+            tipo_csv = desde_csv.schema[columna]
+            if tipo_csv != tipo:
+                print(f"{columna:<25} Parquet: {tipo}   CSV: {tipo_csv}")
+
+        # Se puede pedir que interprete las fechas, pero hay que saber que hacerlo
+        desde_csv_fechas = pl.read_csv(RUTA_CSV, try_parse_dates=True)
+        print(desde_csv_fechas.schema["tpep_pickup_datetime"])
+    - id: 88fa02ac452441e7bc0e999926da0206
+      blockGroup: 88fa02ac452441e7bc0e999926da0206
+      type: text-cell-h2
+      sortingKey: bj
+      content: 9. Reporte comparativo
+    - id: dc7c70febffe409a9eac9f872df8f6cf
+      blockGroup: dc7c70febffe409a9eac9f872df8f6cf
+      type: text-cell-p
+      sortingKey: bk
+      content: 'Ejercicio 5: construye una tabla reporte con tus números y escribe en la variable conclusion
+        un texto de al menos 3 frases, con tus propias palabras y tus números: qué mediste, qué encontraste
+        y qué formato recomiendas para qué. Responde a la pregunta: ¿por qué pesa menos el Parquet?'
+    - id: e44969b8ce5c419199e10f4a8efec25a
+      blockGroup: e44969b8ce5c419199e10f4a8efec25a
+      type: code
+      sortingKey: bl
+      content: |
+        # Construir la tabla del reporte con los números de esta máquina
+        filas = [
+            {"formato": "CSV", "tamano_mb": round(tamano_mb(RUTA_CSV), 1), "segundos_lectura": round(t_csv, 2)},
+            {"formato": "NDJSON", "tamano_mb": round(tamano_mb(RUTA_NDJSON), 1), "segundos_lectura": round(t_ndjson, 2)},
+            {"formato": "Parquet", "tamano_mb": round(tamano_mb(RUTA_PARQUET), 1), "segundos_lectura": round(t_parquet, 2)},
+        ]
+        reporte = pl.DataFrame(filas)
+
+        # Cuántas veces pesa cada formato contra el Parquet
+        tamano_parquet = reporte.filter(pl.col("formato") == "Parquet")["tamano_mb"][0]
+        reporte = reporte.with_columns(
+            (pl.col("tamano_mb") / tamano_parquet).round(1).alias("veces_vs_parquet")
+        )
+        reporte
+    - id: 6bd392faaf3d40e2810b14ae79592bc1
+      blockGroup: 6bd392faaf3d40e2810b14ae79592bc1
+      type: code
+      sortingKey: bm
+      content: |
+        # Escribe aquí tu conclusión con tus propias palabras y tus números (mínimo 3 frases)
+        conclusion = ...
+
+        print(conclusion)
+    - id: f31874ed88774a08ac5ddd17a50020d9
+      blockGroup: f31874ed88774a08ac5ddd17a50020d9
+      type: text-cell-h2
+      sortingKey: bn
+      content: '10. Tu turno: ejercicios 1 a 4'
+    - id: e6b12231ab4047b0a91810592deac625
+      blockGroup: e6b12231ab4047b0a91810592deac625
+      type: text-cell-p
+      sortingKey: bo
+      content: Reemplaza los puntos suspensivos por tu respuesta. La verificación del final te dice qué
+        falta.
+    - id: 233e175d79524a54a0546e887793558c
+      blockGroup: 233e175d79524a54a0546e887793558c
+      type: text-cell-h3
+      sortingKey: bp
+      content: 'Ejercicio 1: el esquema como diccionario'
+    - id: 429133c43a284ecebe4d13030104ce3c
+      blockGroup: 429133c43a284ecebe4d13030104ce3c
+      type: text-cell-p
+      sortingKey: bq
+      content: Lee el esquema del Parquet sin cargar los datos y guárdalo en tipos_por_columna, un diccionario
+        de nombre de columna a tipo escrito como texto.
+    - id: 03b3789a5d464944baea32e3f63a605b
+      blockGroup: 03b3789a5d464944baea32e3f63a605b
+      type: code
+      sortingKey: br
+      content: |
+        # Pista: pl.read_parquet_schema(...) devuelve algo parecido a un diccionario.
+        # Recórrelo con .items() y convierte cada tipo con str().
+        tipos_por_columna = ...
+
+        print(tipos_por_columna)
+    - id: e18ff70bdd924d3fa14e9215035a3862
+      blockGroup: e18ff70bdd924d3fa14e9215035a3862
+      type: text-cell-h3
+      sortingKey: bs
+      content: 'Ejercicio 2: leer solo lo que necesito'
+    - id: 8d9710f89c9e471e842fb745321c056d
+      blockGroup: 8d9710f89c9e471e842fb745321c056d
+      type: text-cell-p
+      sortingKey: bt
+      content: Lee del Parquet únicamente las columnas PULocationID, payment_type y total_amount, y guarda
+        el DataFrame en viajes_min.
+    - id: 7b67c7bd68914f6c99dff11f1d026de0
+      blockGroup: 7b67c7bd68914f6c99dff11f1d026de0
+      type: code
+      sortingKey: bu
+      content: |
+        # Pista: el parámetro columns de pl.read_parquet
+        viajes_min = ...
+
+        print(viajes_min)
+    - id: 183ff032620240f6ae5ce629c3bc1b4a
+      blockGroup: 183ff032620240f6ae5ce629c3bc1b4a
+      type: text-cell-h3
+      sortingKey: bv
+      content: 'Ejercicio 3: una muestra en NDJSON'
+    - id: c231099abfd44269be0e9e9588279daf
+      blockGroup: c231099abfd44269be0e9e9588279daf
+      type: text-cell-p
+      sortingKey: bw
+      content: Guarda las primeras 1000 filas de viajes en datos/muestra.ndjson, léelas de vuelta y guarda
+        en n_muestra cuántas filas se leyeron.
+    - id: 4de69cc9227745a780dba5bcf37cd528
+      blockGroup: 4de69cc9227745a780dba5bcf37cd528
+      type: code
+      sortingKey: bx
+      content: |
+        # Pista: head(1000), write_ndjson y pl.read_ndjson
+        n_muestra = ...
+
+        print(n_muestra)
+    - id: da3f4f7cce504fa3ab08c587c416fc7d
+      blockGroup: da3f4f7cce504fa3ab08c587c416fc7d
+      type: text-cell-h3
+      sortingKey: by
+      content: 'Ejercicio 4: qué pierde el CSV'
+    - id: d8c2af5da82b43599ce2c8bbd8e844dc
+      blockGroup: d8c2af5da82b43599ce2c8bbd8e844dc
+      type: text-cell-p
+      sortingKey: bz
+      content: Lee el CSV de viajes con pl.read_csv sin parámetros extra y guarda en columnas_distintas
+        la lista de columnas cuyo tipo es distinto al del Parquet.
+    - id: e8056a95cbcb4a8e8f3ba10c541a8d63
+      blockGroup: e8056a95cbcb4a8e8f3ba10c541a8d63
+      type: code
+      sortingKey: c0
+      content: |
+        # Pista: compara viajes.schema[columna] con desde_csv.schema[columna] para cada columna
+        columnas_distintas = ...
+
+        print(columnas_distintas)
+    - id: 6dfae2a5d3a945a9a104925a753ea692
+      blockGroup: 6dfae2a5d3a945a9a104925a753ea692
+      type: text-cell-h2
+      sortingKey: c1
+      content: Verificación
+    - id: 605cd0ae2aa34bc2afa816513d7c7f65
+      blockGroup: 605cd0ae2aa34bc2afa816513d7c7f65
+      type: text-cell-p
+      sortingKey: c2
+      content: Ejecuta esta celda para revisar tu trabajo. Si algo falla, el mensaje te dice qué corregir.
+        Esta celda no se modifica.
+    - id: 944c08403fdc420bae8969ab911143da
+      blockGroup: 944c08403fdc420bae8969ab911143da
+      type: code
+      sortingKey: c3
+      content: |
+        def verificar_sesion_03():
+            g = globals()
+            pendientes = []
+
+            def definido(nombre):
+                return nombre in g and g[nombre] is not Ellipsis
+
+            # Datos y archivos
+            if not definido("viajes"):
+                pendientes.append("Falta cargar viajes: ejecuta la sección 1.")
+            elif g["viajes"].height != 2_964_624 or g["viajes"].width != 19:
+                pendientes.append("viajes no tiene el tamaño esperado (2,964,624 filas y 19 columnas).")
+
+            for nombre_ruta, etiqueta in [("RUTA_PARQUET", "el Parquet"), ("RUTA_CSV", "el CSV"), ("RUTA_NDJSON", "el NDJSON")]:
+                if not definido(nombre_ruta) or not g[nombre_ruta].exists():
+                    pendientes.append(f"Falta guardar {etiqueta}: ejecuta la sección 8.")
+
+            # Ejercicio 1
+            if not definido("tipos_por_columna"):
+                pendientes.append("Ejercicio 1: falta tipos_por_columna.")
+            elif not isinstance(g["tipos_por_columna"], dict) or len(g["tipos_por_columna"]) != 19:
+                pendientes.append("Ejercicio 1: tipos_por_columna debe ser un diccionario con 19 columnas.")
+            elif not all(isinstance(v, str) for v in g["tipos_por_columna"].values()):
+                pendientes.append("Ejercicio 1: los tipos deben estar escritos como texto (usa str()).")
+
+            # Ejercicio 2
+            if not definido("viajes_min"):
+                pendientes.append("Ejercicio 2: falta viajes_min.")
+            else:
+                v = g["viajes_min"]
+                if sorted(v.columns) != ["PULocationID", "payment_type", "total_amount"]:
+                    pendientes.append("Ejercicio 2: viajes_min debe tener solo PULocationID, payment_type y total_amount.")
+                elif v.height != 2_964_624:
+                    pendientes.append("Ejercicio 2: viajes_min debe tener todas las filas.")
+
+            # Ejercicio 3
+            if not definido("n_muestra"):
+                pendientes.append("Ejercicio 3: falta n_muestra.")
+            elif g["n_muestra"] != 1000:
+                pendientes.append("Ejercicio 3: n_muestra debe ser 1000.")
+
+            # Ejercicio 4
+            if not definido("columnas_distintas"):
+                pendientes.append("Ejercicio 4: falta columnas_distintas.")
+            elif not isinstance(g["columnas_distintas"], list):
+                pendientes.append("Ejercicio 4: columnas_distintas debe ser una lista.")
+            elif "tpep_pickup_datetime" not in g["columnas_distintas"]:
+                pendientes.append("Ejercicio 4: tpep_pickup_datetime debería estar en la lista, el CSV la lee como texto.")
+
+            # Ejercicio 5: reporte y conclusión
+            if not definido("reporte"):
+                pendientes.append("Ejercicio 5: falta la tabla reporte.")
+            else:
+                r = g["reporte"]
+                columnas_esperadas = {"formato", "tamano_mb", "segundos_lectura", "veces_vs_parquet"}
+                if not hasattr(r, "columns") or not columnas_esperadas.issubset(set(r.columns)):
+                    pendientes.append("Ejercicio 5: reporte debe tener formato, tamano_mb, segundos_lectura y veces_vs_parquet.")
+                elif set(r["formato"].to_list()) != {"CSV", "NDJSON", "Parquet"}:
+                    pendientes.append("Ejercicio 5: reporte debe tener una fila para CSV, NDJSON y Parquet.")
+                else:
+                    tamanos = dict(zip(r["formato"].to_list(), r["tamano_mb"].to_list()))
+                    if not tamanos["Parquet"] < tamanos["CSV"]:
+                        pendientes.append("Ejercicio 5: el Parquet debería pesar menos que el CSV, revisa tus mediciones.")
+
+            if not definido("conclusion") or not isinstance(g["conclusion"], str):
+                pendientes.append("Ejercicio 5: falta escribir la conclusión (variable conclusion).")
+            elif len(g["conclusion"].split()) < 25:
+                pendientes.append("Ejercicio 5: la conclusión es muy corta, escribe al menos 3 frases.")
+
+            if pendientes:
+                for p in pendientes:
+                    print("Pendiente:", p)
+            else:
+                print("Sesión 3 completa. Nos vemos en la siguiente.")
+
+
+        verificar_sesion_03()
+    - id: 8d6bcef999ce41e395fe9650832856cd
+      blockGroup: 8d6bcef999ce41e395fe9650832856cd
+      type: text-cell-h2
+      sortingKey: c4
+      content: Limpieza opcional
+    - id: 04a338a4c6404d7f894a6996d56fe656
+      blockGroup: 04a338a4c6404d7f894a6996d56fe656
+      type: text-cell-callout
+      sortingKey: c5
+      content: La celda de abajo borra los archivos pesados que creó la sesión (CSV, NDJSON y las pruebas
+        de compresión) para liberar espacio. Ejecútala solo después de la verificación. Si vuelves a hacer
+        Run all, se vuelven a crear.
+      metadata:
+        color: yellow
+    - id: e69901d2902e4d72b0cb7d392f8e9ef6
+      blockGroup: e69901d2902e4d72b0cb7d392f8e9ef6
+      type: code
+      sortingKey: c6
+      content: |
+        # Borrar los archivos pesados para liberar espacio. Ejecutar solo después de verificar la sesión.
+        for ruta in [RUTA_CSV, RUTA_NDJSON, *CARPETA.glob("prueba_*.parquet"), CARPETA / "latin1.csv", CARPETA / "muestra.ndjson"]:
+            if Path(ruta).exists():
+                Path(ruta).unlink()
+        print("Archivos temporales borrados. Quedan:", sorted(p.name for p in CARPETA.iterdir()))
+  settings:
+    requirements:
+    - polars==1.43.2
+    - duckdb
+    - pandera
+    - plotly
+    - pyarrow
+environment:
+  python:
+    environment: uv
+    version: '3.13'
