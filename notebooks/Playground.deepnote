@@ -1,0 +1,218 @@
+version: 1.0.0
+metadata:
+  createdAt: '2026-11-12T01:03:56.000Z'
+project:
+  id: 05e81c91-4b7e-4b31-92a6-2ec452c89415
+  name: Curso Data Engineering - Impact Click
+  notebooks:
+  - id: 174fa484-1fa1-4443-9397-5c667aa0a83d
+    name: Playground - Polars y SQL
+    executionMode: block
+    isModule: false
+    blocks:
+    - id: 3e2f5dc22d4a4b11b798155cfff46477
+      blockGroup: 3e2f5dc22d4a4b11b798155cfff46477
+      type: text-cell-h1
+      sortingKey: a0
+      content: 'Playground: Polars y SQL con los datos de taxis'
+    - id: 5280efe964ff4c06ab5a54a283ff9050
+      blockGroup: 5280efe964ff4c06ab5a54a283ff9050
+      type: text-cell-callout
+      sortingKey: a1
+      content: Presiona Run all al empezar. Las celdas de preparación cargan `viajes` y `zonas`. De ahí
+        hacia abajo es tu espacio libre para probar lo que quieras.
+      metadata:
+        color: blue
+    - id: 8fb789ba87d7462e908b5d30bef965b0
+      blockGroup: 8fb789ba87d7462e908b5d30bef965b0
+      type: text-cell-h2
+      sortingKey: a2
+      content: Preparar el entorno
+    - id: a029ccba4cb445028b3086d14708fa7f
+      blockGroup: a029ccba4cb445028b3086d14708fa7f
+      type: text-cell-p
+      sortingKey: a3
+      content: Esta celda instala las librerías del curso con uv, un instalador de Python muy rápido.
+        Lee la lista del archivo requirements.txt del proyecto. Se ejecuta en segundos y es seguro volver
+        a correrla.
+    - id: a322b13ddd004fbf8a273da6752b7478
+      blockGroup: a322b13ddd004fbf8a273da6752b7478
+      type: code
+      sortingKey: a4
+      content: |
+        import sys
+
+        !pip install -q uv
+        !uv pip install -q --python {sys.executable} -r requirements.txt
+    - id: 9a566f2741a74726aa2f9b4de40afee2
+      blockGroup: 9a566f2741a74726aa2f9b4de40afee2
+      type: text-cell-h2
+      sortingKey: a5
+      content: Cargar los datos
+    - id: 8dfb887fc3af49a39219de788e805c04
+      blockGroup: 8dfb887fc3af49a39219de788e805c04
+      type: text-cell-p
+      sortingKey: a6
+      content: Si los archivos ya existen en `datos/` se leen de ahí. Si no, se descargan y se guardan.
+        Al terminar tienes `viajes` (DataFrame de Polars, 2,964,624 filas) y `zonas` (265 filas).
+    - id: f9d2d06780554349a9b79076e1c0b031
+      blockGroup: f9d2d06780554349a9b79076e1c0b031
+      type: code
+      sortingKey: a7
+      content: |
+        import polars as pl
+        import duckdb
+        from pathlib import Path
+
+        URL_VIAJES = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        URL_ZONAS = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+        Path("datos").mkdir(exist_ok=True)
+        RUTA_VIAJES = Path("datos/viajes_2024_01.parquet")
+        RUTA_ZONAS = Path("datos/zonas.csv")
+
+        # Si el archivo ya existe en datos/ se lee de ahí, si no, se descarga
+        viajes = pl.read_parquet(RUTA_VIAJES if RUTA_VIAJES.exists() else URL_VIAJES)
+        zonas = pl.read_csv(RUTA_ZONAS if RUTA_ZONAS.exists() else URL_ZONAS)
+
+        if not RUTA_VIAJES.exists():
+            viajes.write_parquet(RUTA_VIAJES)
+        if not RUTA_ZONAS.exists():
+            zonas.write_csv(RUTA_ZONAS)
+
+        print("Polars:", pl.__version__)
+        print(f"Viajes: {viajes.height:,} filas x {viajes.width} columnas")
+        print(f"Zonas:  {zonas.height:,} filas x {zonas.width} columnas")
+    - id: abf4f37f75864fa9851d25f633d03bbf
+      blockGroup: abf4f37f75864fa9851d25f633d03bbf
+      type: text-cell-h2
+      sortingKey: a8
+      content: Lo que ya tienes
+    - id: 0dea53f9987e4d76913f518de00fdb5e
+      blockGroup: 0dea53f9987e4d76913f518de00fdb5e
+      type: text-cell-bullet
+      sortingKey: a9
+      content: '`viajes`: DataFrame de Polars con los viajes de enero 2024 (la tabla de hechos).'
+    - id: fec08b14b04240bd8acf6b41cd46f3b1
+      blockGroup: fec08b14b04240bd8acf6b41cd46f3b1
+      type: text-cell-bullet
+      sortingKey: aa
+      content: '`zonas`: DataFrame de Polars con las zonas (la dimensión). Se une con `PULocationID` o
+        `DOLocationID` contra `LocationID`.'
+    - id: 4e2fae2bfafe4a3bbfd99112c36dd2dc
+      blockGroup: 4e2fae2bfafe4a3bbfd99112c36dd2dc
+      type: text-cell-bullet
+      sortingKey: ab
+      content: '`lf`: un LazyFrame sobre el mismo archivo, para probar evaluación lazy sin cargar nada
+        más.'
+    - id: 9be6cddee05145ae9d592a0e452f21b4
+      blockGroup: 9be6cddee05145ae9d592a0e452f21b4
+      type: text-cell-bullet
+      sortingKey: ac
+      content: 'SQL: `duckdb.sql("SELECT ... FROM viajes")` encuentra `viajes` y `zonas` por su nombre.
+        Termina con `.pl()` para obtener un DataFrame de Polars.'
+    - id: 340384b909534abf8a85b12ecaf0e5f5
+      blockGroup: 340384b909534abf8a85b12ecaf0e5f5
+      type: code
+      sortingKey: ad
+      content: |
+        # LazyFrame listo para jugar: no lee nada hasta que llames a .collect()
+        lf = pl.scan_parquet("datos/viajes_2024_01.parquet")
+
+        viajes.head(5)
+    - id: 5b3bb60736334a87960527afe9370440
+      blockGroup: 5b3bb60736334a87960527afe9370440
+      type: text-cell-h2
+      sortingKey: ae
+      content: Playground
+    - id: 927616d3f9a442c88b2ef5bdc1f5901c
+      blockGroup: 927616d3f9a442c88b2ef5bdc1f5901c
+      type: text-cell-p
+      sortingKey: af
+      content: Todo lo que sigue es tuyo. Cada celda es independiente, bórralas o duplícalas como quieras.
+    - id: f18714437ac84f8593a7f7c3571027f9
+      blockGroup: f18714437ac84f8593a7f7c3571027f9
+      type: text-cell-h3
+      sortingKey: ag
+      content: Polars (eager)
+    - id: 46f78c5f5bdc4846aa200aef693f132c
+      blockGroup: 46f78c5f5bdc4846aa200aef693f132c
+      type: code
+      sortingKey: ah
+      content: |
+        # Ejemplo: viajes y propina promedio por tipo de pago
+        (
+            viajes
+            .group_by("payment_type")
+            .agg(
+                pl.len().alias("viajes"),
+                pl.col("tip_amount").mean().alias("propina_promedio"),
+            )
+            .sort("viajes", descending=True)
+        )
+    - id: f6bcf22c22d648998c300b22309ce639
+      blockGroup: f6bcf22c22d648998c300b22309ce639
+      type: text-cell-h3
+      sortingKey: ai
+      content: Polars (lazy)
+    - id: 4f8071b8ca304e6fb0371aaecb3878f7
+      blockGroup: 4f8071b8ca304e6fb0371aaecb3878f7
+      type: code
+      sortingKey: aj
+      content: |
+        # Ejemplo: un plan lazy. Lee el plan con explain() y ejecútalo con collect()
+        plan = (
+            lf
+            .filter(pl.col("trip_distance") > 0)
+            .select("PULocationID", "total_amount")
+        )
+
+        print(plan.explain())
+        plan.collect().head(5)
+    - id: 1b812708c96245be90c68abd853a5bca
+      blockGroup: 1b812708c96245be90c68abd853a5bca
+      type: text-cell-h3
+      sortingKey: ak
+      content: SQL con DuckDB
+    - id: 33f53b08015b4ffd8417a72a22ed9cc2
+      blockGroup: 33f53b08015b4ffd8417a72a22ed9cc2
+      type: code
+      sortingKey: al
+      content: |
+        # Ejemplo: las 5 zonas de origen con más viajes
+        duckdb.sql("""
+            SELECT z.Zone, COUNT(*) AS viajes
+            FROM viajes AS v
+            LEFT JOIN zonas AS z ON v.PULocationID = z.LocationID
+            GROUP BY z.LocationID, z.Zone
+            ORDER BY viajes DESC
+            LIMIT 5
+        """).pl()
+    - id: c91c744b076f43839392ffb47a5e7ef2
+      blockGroup: c91c744b076f43839392ffb47a5e7ef2
+      type: text-cell-h3
+      sortingKey: am
+      content: Tu espacio
+    - id: 2007804a91804c27b4929b39bea4518a
+      blockGroup: 2007804a91804c27b4929b39bea4518a
+      type: code
+      sortingKey: an
+      content: |
+        # Escribe aquí
+    - id: 04e6868792574f62a557e96b81d6f660
+      blockGroup: 04e6868792574f62a557e96b81d6f660
+      type: code
+      sortingKey: ao
+      content: |
+        # Y aquí
+  settings:
+    requirements:
+    - polars==1.43.2
+    - duckdb
+    - pandera
+    - plotly
+    - pyarrow
+environment:
+  python:
+    environment: uv
+    version: '3.13'
